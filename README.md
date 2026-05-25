@@ -7,6 +7,14 @@ This package includes:
 - `package.json` — optional Node start script.
 - `api-proxy.php` — optional hosted PHP proxy for trusted/private use.
 
+## Application features
+
+- Demo mode includes sample request/response scenarios for single-field and multi-field request mapping.
+- Request variables can be mapped explicitly to parsed bulk input columns.
+- Response fields can be mapped to result columns from discovered JSON paths.
+- Requests, run responses, and bulk run templates are stored locally in the browser.
+- The saved library can be exported/imported as JSON to move between systems.
+
 ## Browser-only mode
 
 Upload `index.html` as your ReaderNook Lab app page. Browser Direct mode works only when the target API allows CORS requests from your site.

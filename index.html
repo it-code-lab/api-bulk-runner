@@ -347,6 +347,20 @@
       gap: 8px;
       margin-bottom: 8px;
     }
+    .request-map-row {
+      display: grid;
+      grid-template-columns: minmax(120px, 0.8fr) minmax(180px, 1.2fr);
+      gap: 8px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+    .select-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .select-row select { flex: 1 1 220px; }
 
     .progress {
       height: 12px;
@@ -445,6 +459,7 @@
       .logo { width: 46px; height: 46px; border-radius: 15px; }
       .card { padding: 14px; border-radius: 20px; }
       .mapping-row { grid-template-columns: 1fr; }
+      .request-map-row { grid-template-columns: 1fr; }
       .mapping-row .btn { justify-content: center; }
       .toolbar .btn, .result-actions .btn { flex: 1 1 auto; justify-content: center; }
     }
@@ -476,6 +491,7 @@
         <span class="pill">Auto JSON field mapping</span>
         <span class="pill">Bulk CSV / TSV / JSON input</span>
         <span class="pill">Export CSV / JSON</span>
+        <span class="pill">Saved requests, runs, and templates</span>
         <span class="pill">Local Agent for CORS-blocked APIs</span>
       </div>
     </section>
@@ -498,6 +514,14 @@
               <option value="direct">Browser direct — works only with CORS-enabled APIs</option>
               <option value="proxy">Proxy endpoint — send through your own backend/local agent</option>
             </select>
+          </div>
+
+          <div class="field" id="demoSampleField">
+            <label for="demoSample">Demo sample</label>
+            <div class="select-row">
+              <select id="demoSample"></select>
+              <button class="btn small" id="loadSelectedDemoBtn" type="button">Load Sample</button>
+            </div>
           </div>
 
           <div class="field hide" id="proxyField">
@@ -583,6 +607,16 @@
             <div id="variableSummary" class="mini">No variables detected yet.</div>
             <div id="variableTokens" class="smart-list"></div>
           </div>
+
+          <details>
+            <summary>Demo sample request / response</summary>
+            <div class="detail-body">
+              <label>Sample request</label>
+              <pre id="demoRequestSample" class="mono">Load a demo sample to preview the request.</pre>
+              <label>Sample response</label>
+              <pre id="demoResponseSample" class="mono">Load a demo sample to preview the response.</pre>
+            </div>
+          </details>
         </section>
 
         <section class="card">
@@ -595,9 +629,14 @@
           </div>
 
           <div class="tabs" role="tablist" aria-label="Bulk input helpers">
-            <button class="tab active" type="button" data-sample="single">Single column</button>
+            <button class="tab active" type="button" data-sample="single">Input Columns</button>
             <button class="tab" type="button" data-sample="csv">CSV</button>
             <button class="tab" type="button" data-sample="json">JSON</button>
+          </div>
+
+          <div class="smart-box" style="margin-top: 12px;">
+            <h3>Needed input columns</h3>
+            <div id="inputColumnHints" class="smart-list"></div>
           </div>
 
           <div class="field" style="margin-top: 12px;">
@@ -615,7 +654,7 @@
               </select>
             </div>
             <div class="field">
-              <label for="singleColumnVar">Single-column variable</label>
+              <label for="singleColumnVar">Default input variable</label>
               <select id="singleColumnVar"></select>
             </div>
           </div>
@@ -627,6 +666,14 @@
           </div>
 
           <div id="inputPreview" style="margin-top: 14px;"></div>
+
+          <details open>
+            <summary>Request field mapping</summary>
+            <div class="detail-body">
+              <p class="mini">Map each detected request variable to one of the parsed input columns. Leave a field on Auto to match by name.</p>
+              <div id="requestMappingList" style="margin-top: 10px;"></div>
+            </div>
+          </details>
         </section>
 
         <section class="card">
@@ -718,6 +765,7 @@
           <div class="result-actions">
             <button class="btn" id="exportCsvBtn" type="button">⬇ Export CSV</button>
             <button class="btn" id="exportJsonBtn" type="button">⬇ Export JSON</button>
+            <button class="btn good" id="saveRunBtn" type="button">💾 Save Run</button>
             <button class="btn" id="copyCsvBtn" type="button">📋 Copy CSV</button>
             <button class="btn ghost" id="clearResultsBtn" type="button">Clear Results</button>
           </div>
@@ -731,7 +779,7 @@
           <div class="section-title">
             <div>
               <h2>Saved Templates</h2>
-              <p>Templates are saved locally in this browser only.</p>
+              <p>Save bulk run templates with request and response mappings.</p>
             </div>
           </div>
           <div class="template-row">
@@ -739,6 +787,37 @@
             <button class="btn" id="saveTemplateBtn" type="button">💾 Save</button>
             <button class="btn" id="loadTemplateBtn" type="button">Load</button>
             <button class="btn danger" id="deleteTemplateBtn" type="button">Delete</button>
+          </div>
+          <div class="toolbar" style="margin-top: 12px;">
+            <button class="btn" id="exportLibraryBtn" type="button">⬇ Export Library</button>
+            <button class="btn" id="importLibraryBtn" type="button">⬆ Import Library</button>
+            <input id="importLibraryFile" type="file" accept="application/json,.json" class="hide" />
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="section-title">
+            <div>
+              <h2>Saved Requests & Responses</h2>
+              <p>Keep request definitions and run responses locally, similar to a lightweight Postman collection.</p>
+            </div>
+          </div>
+          <div class="field">
+            <label for="requestSelect">Saved requests</label>
+            <div class="template-row">
+              <select id="requestSelect" style="flex: 1 1 220px;"></select>
+              <button class="btn" id="saveRequestBtn" type="button">Save</button>
+              <button class="btn" id="loadRequestBtn" type="button">Load</button>
+              <button class="btn danger" id="deleteRequestBtn" type="button">Delete</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="responseSelect">Saved runs / responses</label>
+            <div class="template-row">
+              <select id="responseSelect" style="flex: 1 1 220px;"></select>
+              <button class="btn" id="loadResponseBtn" type="button">Load</button>
+              <button class="btn danger" id="deleteResponseBtn" type="button">Delete</button>
+            </div>
           </div>
         </section>
 
@@ -754,8 +833,7 @@
           <details style="margin-top: 12px;">
             <summary>How to run the included local agent</summary>
             <div class="detail-body">
-              <pre class="mono" style="white-space: pre-wrap;">cd local-agent
-node local-agent.js</pre>
+              <pre class="mono" style="white-space: pre-wrap;">node local-agent.js</pre>
               <p class="mini">The terminal prints a token. Paste that token into the Agent token field above. Default endpoint: <span class="mono">http://127.0.0.1:8787/request</span>.</p>
             </div>
           </details>
@@ -790,10 +868,12 @@ node local-agent.js</pre>
         variables: [],
         rows: [],
         rowColumns: [],
+        requestMappings: {},
         mappings: [],
         results: [],
         sampleJson: null,
         discoveredPaths: [],
+        demoScenario: 'customerLookup',
         running: false,
         aborters: [],
         runStartedAt: 0
@@ -801,13 +881,69 @@ node local-agent.js</pre>
 
       const storageKeys = {
         settings: 'apiBulkRunner.settings.v1',
-        templates: 'apiBulkRunner.templates.v1'
+        templates: 'apiBulkRunner.templates.v1',
+        requests: 'apiBulkRunner.requests.v1',
+        responses: 'apiBulkRunner.responses.v1'
       };
 
       const controls = [
         'runMode', 'proxyUrl', 'proxyToken', 'method', 'url', 'authType', 'contentType', 'headers', 'body',
         'bulkInput', 'firstRowMode', 'singleColumnVar', 'concurrency', 'delayMs', 'timeoutMs', 'retries', 'saveRaw'
       ];
+
+      const demoScenarios = {
+        customerLookup: {
+          label: 'Customer lookup - one request field',
+          method: 'POST',
+          url: 'https://api.example.com/customer/details',
+          headers: 'X-Client: ReaderNook-Lab\nX-Request-Id: bulk-{{customerNumber}}',
+          body: { customerNumber: '{{customerNumber}}', includeAccount: true, source: 'bulk-runner' },
+          bulkInput: 'customerNumber\n10001\n10002\n10003\n10004\n10005\n404',
+          requestMappings: { customerNumber: 'customerNumber' },
+          responseMappings: [
+            { column: 'Customer Number', path: '$.customer.customerNumber' },
+            { column: 'Name', path: '$.customer.name' },
+            { column: 'Status', path: '$.customer.status' },
+            { column: 'Segment', path: '$.customer.segment' },
+            { column: 'Balance', path: '$.customer.balance' },
+            { column: 'Risk Score', path: '$.customer.riskScore' }
+          ]
+        },
+        orderStatus: {
+          label: 'Order status - multiple request fields',
+          method: 'POST',
+          url: 'https://api.example.com/accounts/{{accountId}}/orders/{{orderId}}',
+          headers: 'X-Tenant: {{tenant}}\nX-Request-Id: order-{{orderId}}',
+          body: { accountId: '{{accountId}}', orderId: '{{orderId}}', tenant: '{{tenant}}', includeShipment: true },
+          bulkInput: 'accountId,orderId,tenant\nA-100,ORD-9001,NA\nA-101,ORD-9002,EU\nA-102,ORD-9003,APAC\nA-404,ORD-404,NA',
+          requestMappings: { accountId: 'accountId', orderId: 'orderId', tenant: 'tenant' },
+          responseMappings: [
+            { column: 'Account', path: '$.order.accountId' },
+            { column: 'Order', path: '$.order.orderId' },
+            { column: 'Order Status', path: '$.order.status' },
+            { column: 'Total', path: '$.order.total' },
+            { column: 'Shipment Status', path: '$.shipment.status' },
+            { column: 'ETA', path: '$.shipment.eta' }
+          ]
+        },
+        supportCase: {
+          label: 'Support case - nested response fields',
+          method: 'PATCH',
+          url: 'https://api.example.com/support/cases/{{caseId}}',
+          headers: 'Authorization: Bearer {{token}}\nX-Region: {{region}}',
+          body: { caseId: '{{caseId}}', priority: '{{priority}}', owner: '{{owner}}', note: 'Bulk update from demo mode' },
+          bulkInput: 'caseId,priority,owner,region,token\nCASE-1001,High,Ana,CA,demo-token\nCASE-1002,Normal,Noah,US,demo-token\nCASE-404,High,Maya,CA,demo-token',
+          requestMappings: { caseId: 'caseId', priority: 'priority', owner: 'owner', region: 'region', token: 'token' },
+          responseMappings: [
+            { column: 'Case', path: '$.case.caseId' },
+            { column: 'Priority', path: '$.case.priority' },
+            { column: 'Owner', path: '$.case.owner' },
+            { column: 'SLA', path: '$.case.sla.status' },
+            { column: 'Next Action', path: '$.case.nextAction' },
+            { column: 'Message', path: '$.message' }
+          ]
+        }
+      };
 
       function escapeHtml(value) {
         return String(value ?? '').replace(/[&<>'"]/g, (ch) => ({
@@ -852,7 +988,15 @@ node local-agent.js</pre>
       function readForm() {
         const cfg = {};
         controls.forEach(id => cfg[id] = $(id)?.value ?? '');
-        cfg.mappings = state.mappings;
+        cfg.demoSample = $('demoSample')?.value || state.demoScenario;
+        cfg.authFields = {};
+        ['bearerToken', 'apiKeyName', 'apiKeyValue', 'basicUser', 'basicPass'].forEach(id => {
+          if ($(id)) cfg.authFields[id] = $(id).value;
+        });
+        cfg.requestMappings = { ...state.requestMappings };
+        cfg.mappings = state.mappings.map(m => ({ ...m }));
+        cfg.sampleJson = state.sampleJson;
+        cfg.discoveredPaths = state.discoveredPaths;
         return cfg;
       }
 
@@ -860,11 +1004,21 @@ node local-agent.js</pre>
         controls.forEach(id => {
           if ($(id) && Object.prototype.hasOwnProperty.call(cfg, id)) $(id).value = cfg[id];
         });
-        if (Array.isArray(cfg.mappings)) state.mappings = cfg.mappings;
         updateAuthFields();
+        Object.entries(cfg.authFields || {}).forEach(([id, value]) => {
+          if ($(id)) $(id).value = value;
+        });
+        state.requestMappings = cfg.requestMappings && typeof cfg.requestMappings === 'object' ? { ...cfg.requestMappings } : {};
+        if (Array.isArray(cfg.mappings)) state.mappings = cfg.mappings.map(m => ({ ...m }));
+        state.sampleJson = cfg.sampleJson || null;
+        state.discoveredPaths = Array.isArray(cfg.discoveredPaths) ? cfg.discoveredPaths : (state.sampleJson ? discoverPaths(state.sampleJson) : []);
+        state.demoScenario = cfg.demoSample || state.demoScenario;
         detectVariables();
         parseBulkInput(false);
         renderMappings();
+        renderRequestMappings();
+        renderSampleResponse();
+        renderDemoArtifacts();
         updateModeUI();
       }
 
@@ -889,13 +1043,21 @@ node local-agent.js</pre>
       }
 
       function getTemplates() {
-        try { return JSON.parse(localStorage.getItem(storageKeys.templates) || '{}'); }
-        catch { return {}; }
+        return getStore('templates');
       }
 
       function setTemplates(templates) {
-        localStorage.setItem(storageKeys.templates, JSON.stringify(templates));
+        setStore('templates', templates);
         renderTemplateSelect();
+      }
+
+      function getStore(name) {
+        try { return JSON.parse(localStorage.getItem(storageKeys[name]) || '{}'); }
+        catch { return {}; }
+      }
+
+      function setStore(name, value) {
+        localStorage.setItem(storageKeys[name], JSON.stringify(value || {}));
       }
 
       function renderTemplateSelect() {
@@ -904,6 +1066,27 @@ node local-agent.js</pre>
         $('templateSelect').innerHTML = names.length
           ? names.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('')
           : '<option value="">No saved templates yet</option>';
+      }
+
+      function renderNamedSelect(selectId, storeName, emptyText) {
+        const items = getStore(storeName);
+        const names = Object.keys(items).sort((a, b) => a.localeCompare(b));
+        $(selectId).innerHTML = names.length
+          ? names.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('')
+          : `<option value="">${escapeHtml(emptyText)}</option>`;
+      }
+
+      function renderSavedLibrary() {
+        renderTemplateSelect();
+        renderNamedSelect('requestSelect', 'requests', 'No saved requests yet');
+        renderNamedSelect('responseSelect', 'responses', 'No saved runs yet');
+      }
+
+      function renderDemoSelect() {
+        $('demoSample').innerHTML = Object.entries(demoScenarios).map(([key, demo]) =>
+          `<option value="${escapeHtml(key)}">${escapeHtml(demo.label)}</option>`
+        ).join('');
+        $('demoSample').value = state.demoScenario;
       }
 
       function updateAuthFields() {
@@ -942,6 +1125,9 @@ node local-agent.js</pre>
         state.variables = unique(vars);
         renderVariables();
         renderSingleColumnVarOptions();
+        renderInputColumnHints();
+        renderRequestMappings();
+        renderDemoArtifacts();
       }
 
       function renderVariables() {
@@ -959,9 +1145,17 @@ node local-agent.js</pre>
         if (vars.includes(current)) $('singleColumnVar').value = current;
       }
 
+      function renderInputColumnHints() {
+        const target = $('inputColumnHints');
+        if (!target) return;
+        const vars = state.variables.length ? state.variables : ['value'];
+        target.innerHTML = vars.map(v => `<span class="token">${escapeHtml(v)}</span>`).join('');
+      }
+
       function updateModeUI() {
         const mode = $('runMode').value;
         $('proxyField').classList.toggle('hide', mode !== 'proxy');
+        $('demoSampleField').classList.toggle('hide', mode !== 'demo');
         $('modeBadge').textContent = mode === 'demo' ? 'Demo mode' : mode === 'proxy' ? 'Local Agent / Proxy mode' : 'Browser mode';
         $('modeBadge').className = 'badge ' + (mode === 'direct' ? 'warn' : mode === 'proxy' ? 'good' : '');
       }
@@ -1126,6 +1320,7 @@ node local-agent.js</pre>
 
       function renderInputPreview() {
         $('rowCountBadge').textContent = `${state.rows.length} row${state.rows.length === 1 ? '' : 's'}`;
+        renderRequestMappings();
         if (!state.rows.length) {
           $('inputPreview').innerHTML = '<div class="empty">No rows parsed yet.</div>';
           return;
@@ -1134,7 +1329,7 @@ node local-agent.js</pre>
         const cols = state.rowColumns;
         const missing = state.variables.filter(v => !cols.some(c => normalizeName(c) === normalizeName(v)));
         const missingHtml = missing.length
-          ? `<div class="smart-box" style="margin-bottom:12px;"><strong>Missing variables:</strong> ${missing.map(v => `<span class="token">{{${escapeHtml(v)}}}</span>`).join(' ')} <div class="mini" style="margin-top:6px;">Add matching columns, use single-column input, or rename your placeholder.</div></div>`
+          ? `<div class="smart-box" style="margin-bottom:12px;"><strong>Missing variables:</strong> ${missing.map(v => `<span class="token">{{${escapeHtml(v)}}}</span>`).join(' ')} <div class="mini" style="margin-top:6px;">Add matching columns, use input-column mode, or rename your placeholder.</div></div>`
           : '';
         const table = `
           <div class="table-wrap" style="max-height:260px;">
@@ -1145,6 +1340,52 @@ node local-agent.js</pre>
           </div>
           <div class="mini" style="margin-top:8px;">Showing ${rows.length} of ${state.rows.length} parsed rows.</div>`;
         $('inputPreview').innerHTML = missingHtml + table;
+      }
+
+      function renderRequestMappings() {
+        const target = $('requestMappingList');
+        if (!target) return;
+        const vars = state.variables;
+        const cols = state.rowColumns;
+        Object.keys(state.requestMappings).forEach(variable => {
+          if (!vars.includes(variable)) delete state.requestMappings[variable];
+        });
+        if (!vars.length) {
+          target.innerHTML = '<div class="empty">No request variables detected yet.</div>';
+          return;
+        }
+        const optionsFor = (variable) => {
+          const selected = state.requestMappings[variable] || '';
+          const auto = `<option value="">Auto match</option>`;
+          return auto + cols.map(col =>
+            `<option value="${escapeHtml(col)}"${col === selected ? ' selected' : ''}>${escapeHtml(col)}</option>`
+          ).join('');
+        };
+        target.innerHTML = vars.map(variable => `
+          <div class="request-map-row">
+            <div><span class="token">{{${escapeHtml(variable)}}}</span></div>
+            <select data-request-map="${escapeHtml(variable)}"${cols.length ? '' : ' disabled'}>
+              ${optionsFor(variable)}
+            </select>
+          </div>
+        `).join('');
+        document.querySelectorAll('[data-request-map]').forEach(select => {
+          select.addEventListener('change', () => {
+            const variable = select.dataset.requestMap;
+            if (select.value) state.requestMappings[variable] = select.value;
+            else delete state.requestMappings[variable];
+            saveSettingsDebounced();
+          });
+        });
+      }
+
+      function applyRequestMappings(row) {
+        const mapped = { ...row };
+        state.variables.forEach(variable => {
+          const column = state.requestMappings[variable];
+          if (column && Object.prototype.hasOwnProperty.call(row, column)) mapped[variable] = row[column];
+        });
+        return mapped;
       }
 
       function parseHeaders(text, row) {
@@ -1265,22 +1506,56 @@ node local-agent.js</pre>
         return { status, statusText, text, json, parseError };
       }
 
-      async function demoFetch(request, row, index) {
-        await sleep(220 + Math.random() * 280);
-        const primaryKey = state.variables[0] || Object.keys(row)[0] || 'customerNumber';
-        const rawValue = row[primaryKey] ?? Object.values(row)[0] ?? `${10000 + index}`;
-        const num = Number(String(rawValue).replace(/\D/g, '').slice(-4)) || index + 1;
-        if (String(rawValue).toLowerCase().includes('fail') || String(rawValue).endsWith('404')) {
+      function demoHasFailure(row) {
+        return Object.values(row).some(value => /(^|[-_\s])404$|fail|missing/i.test(String(value)));
+      }
+
+      function buildDemoJson(row, index) {
+        const scenario = $('demoSample')?.value || state.demoScenario || 'customerLookup';
+        const num = Number(Object.values(row).join('').replace(/\D/g, '').slice(-4)) || index + 1;
+        if (scenario === 'orderStatus') {
+          const orderId = row.orderId || `ORD-${9000 + index}`;
+          const accountId = row.accountId || `A-${100 + index}`;
+          const statuses = ['Processing', 'Packed', 'Shipped', 'Delivered'];
           return {
-            status: 404,
-            statusText: 'Not Found',
-            text: JSON.stringify({ error: { code: 'CUSTOMER_NOT_FOUND', message: `No customer found for ${rawValue}` } }, null, 2),
-            json: { error: { code: 'CUSTOMER_NOT_FOUND', message: `No customer found for ${rawValue}` } }
+            request: { accountId, orderId, tenant: row.tenant || 'NA', receivedAt: new Date().toISOString() },
+            order: {
+              accountId,
+              orderId,
+              status: statuses[num % statuses.length],
+              total: Number((49.95 + (num % 19) * 13.7).toFixed(2)),
+              currency: row.tenant === 'EU' ? 'EUR' : 'USD'
+            },
+            shipment: {
+              carrier: ['UPS', 'DHL', 'FedEx', 'Canada Post'][num % 4],
+              status: num % 3 === 0 ? 'Label Created' : 'In Transit',
+              eta: new Date(Date.now() + (num % 7 + 1) * 86400000).toISOString().slice(0, 10)
+            },
+            meta: { source: 'demo-mode', traceId: `trace_${Math.random().toString(36).slice(2, 10)}` }
           };
         }
+        if (scenario === 'supportCase') {
+          const caseId = row.caseId || `CASE-${1000 + index}`;
+          const priority = row.priority || 'Normal';
+          return {
+            request: { caseId, region: row.region || 'US', receivedAt: new Date().toISOString() },
+            case: {
+              caseId,
+              priority,
+              owner: row.owner || 'Unassigned',
+              status: priority.toLowerCase() === 'high' ? 'Escalated' : 'Open',
+              sla: { status: priority.toLowerCase() === 'high' ? 'At Risk' : 'On Track', hoursRemaining: priority.toLowerCase() === 'high' ? 6 : 32 },
+              nextAction: priority.toLowerCase() === 'high' ? 'Manager review' : 'Customer follow-up'
+            },
+            message: 'Case updated in demo mode',
+            meta: { source: 'demo-mode', traceId: `trace_${Math.random().toString(36).slice(2, 10)}` }
+          };
+        }
+        const primaryKey = state.variables[0] || Object.keys(row)[0] || 'customerNumber';
+        const rawValue = row[primaryKey] ?? Object.values(row)[0] ?? `${10000 + index}`;
         const names = ['Aarav Mehta', 'Maya Patel', 'Noah Wilson', 'Emma Brown', 'Liam Chen', 'Olivia Singh', 'Sophia Martin'];
         const segments = ['Gold', 'Silver', 'Bronze', 'Premium', 'Standard'];
-        const json = {
+        return {
           request: { [primaryKey]: rawValue, receivedAt: new Date().toISOString() },
           customer: {
             customerNumber: rawValue,
@@ -1298,19 +1573,34 @@ node local-agent.js</pre>
             traceId: `trace_${Math.random().toString(36).slice(2, 10)}`
           }
         };
+      }
+
+      async function demoFetch(request, row, index) {
+        await sleep(220 + Math.random() * 280);
+        if (demoHasFailure(row)) {
+          const rawValue = Object.values(row).find(value => /404|fail|missing/i.test(String(value))) || Object.values(row)[0] || 'demo row';
+          return {
+            status: 404,
+            statusText: 'Not Found',
+            text: JSON.stringify({ error: { code: 'DEMO_NOT_FOUND', message: `No demo record found for ${rawValue}` } }, null, 2),
+            json: { error: { code: 'DEMO_NOT_FOUND', message: `No demo record found for ${rawValue}` } }
+          };
+        }
+        const json = buildDemoJson(row, index);
         return { status: 200, statusText: 'OK', text: JSON.stringify(json, null, 2), json };
       }
 
       async function sendRequest(row, index) {
-        const request = buildRequest(row);
+        const requestInput = applyRequestMappings(row);
+        const request = buildRequest(requestInput);
         const started = performance.now();
         const mode = $('runMode').value;
         let response;
-        if (mode === 'demo') response = await demoFetch(request, row, index);
+        if (mode === 'demo') response = await demoFetch(request, requestInput, index);
         else if (mode === 'proxy') response = await proxyFetch(request);
         else response = await fetchWithTimeout(request);
         const durationMs = Math.round(performance.now() - started);
-        return { request, response, durationMs };
+        return { request, requestInput, response, durationMs };
       }
 
       async function sendWithRetries(row, index) {
@@ -1549,7 +1839,7 @@ node local-agent.js</pre>
               const out = await sendWithRetries(input, localIndex);
               const response = out.response;
               const result = {
-                input,
+                input: out.requestInput || input,
                 request: { ...out.request, headers: maskSensitiveHeaders(out.request.headers) },
                 status: response.status,
                 statusText: response.statusText,
@@ -1570,7 +1860,7 @@ node local-agent.js</pre>
               }
             } catch (err) {
               const result = {
-                input,
+                input: applyRequestMappings(input),
                 request: null,
                 status: '',
                 statusText: '',
@@ -1669,36 +1959,175 @@ node local-agent.js</pre>
         }
       }
 
-      function loadDemo() {
+      function renderDemoArtifacts() {
+        if (!$('demoRequestSample') || !$('demoResponseSample')) return;
+        const scenario = $('demoSample')?.value || state.demoScenario || 'customerLookup';
+        const sampleRow = applyRequestMappings(state.rows[0] || {});
+        let request = null;
+        try { request = Object.keys(sampleRow).length ? buildRequest(sampleRow) : null; } catch { request = null; }
+        $('demoRequestSample').textContent = request ? JSON.stringify({ input: sampleRow, request }, null, 2) : 'Load a demo sample to preview the request.';
+        $('demoResponseSample').textContent = JSON.stringify(buildDemoJson(sampleRow, 0), null, 2);
+        if (demoScenarios[scenario]) $('demoSample').value = scenario;
+      }
+
+      function loadDemo(name = $('demoSample')?.value || state.demoScenario || 'customerLookup') {
+        const demo = demoScenarios[name] || demoScenarios.customerLookup;
+        state.demoScenario = Object.keys(demoScenarios).includes(name) ? name : 'customerLookup';
         $('runMode').value = 'demo';
-        $('method').value = 'POST';
-        $('url').value = 'https://api.example.com/customer/details';
+        $('demoSample').value = state.demoScenario;
+        $('method').value = demo.method;
+        $('url').value = demo.url;
         $('authType').value = 'none';
         $('contentType').value = 'application/json';
-        $('headers').value = 'X-Client: ReaderNook-Lab\nX-Request-Id: bulk-{{customerNumber}}';
-        $('body').value = JSON.stringify({ customerNumber: '{{customerNumber}}', includeAccount: true, source: 'bulk-runner' }, null, 2);
-        $('bulkInput').value = 'customerNumber\n10001\n10002\n10003\n10004\n10005\n404';
-        $('firstRowMode').value = 'auto';
+        $('headers').value = demo.headers;
+        $('body').value = JSON.stringify(demo.body, null, 2);
+        $('bulkInput').value = demo.bulkInput;
+        $('firstRowMode').value = 'yes';
         $('concurrency').value = '3';
         $('delayMs').value = '120';
         $('retries').value = '1';
-        state.sampleJson = null;
-        state.discoveredPaths = [];
-        state.mappings = [];
+        state.requestMappings = { ...demo.requestMappings };
         detectVariables();
         parseBulkInput(false);
+        const firstRow = applyRequestMappings(state.rows[0] || {});
+        state.sampleJson = buildDemoJson(firstRow, 0);
+        state.discoveredPaths = discoverPaths(state.sampleJson);
+        state.mappings = demo.responseMappings.map(m => ({ ...m }));
         updateModeUI();
+        renderRequestMappings();
         renderMappings();
         renderSampleResponse();
+        renderDemoArtifacts();
         saveSettings();
-        toast('Demo loaded. Click “Test First Row” or “Run Bulk”.', 'good');
+        toast('Demo sample loaded with request and response mappings.', 'good');
       }
 
       function sampleRows(mode) {
-        const v = state.variables[0] || 'customerNumber';
-        if (mode === 'csv') return `${v},region,notes\n10001,CA,first customer\n10002,US,priority\n404,CA,missing sample`;
-        if (mode === 'json') return JSON.stringify([{ [v]: '10001', region: 'CA' }, { [v]: '10002', region: 'US' }, { [v]: '404', region: 'CA' }], null, 2);
-        return `10001\n10002\n10003\n404`;
+        const vars = state.variables.length ? state.variables : ['customerNumber'];
+        if (mode === 'single' || mode === 'csv') {
+          const rows = [0, 1, 2].map(i => vars.map(v => sampleValueForVariable(v, i)).join(','));
+          rows.push(vars.map(v => /id|number|case|order/i.test(v) ? `${sampleValueForVariable(v, 9)}404` : sampleValueForVariable(v, 3)).join(','));
+          return `${vars.join(',')}\n${rows.join('\n')}`;
+        }
+        if (mode === 'json') {
+          return JSON.stringify([0, 1, 2].map(i => Object.fromEntries(vars.map(v => [v, sampleValueForVariable(v, i)]))), null, 2);
+        }
+        return ['10001', '10002', '10003', '404'].join('\n');
+      }
+
+      function sampleValueForVariable(variable, index) {
+        const v = String(variable).toLowerCase();
+        if (v.includes('account')) return `A-${100 + index}`;
+        if (v.includes('order')) return `ORD-${9001 + index}`;
+        if (v.includes('case')) return `CASE-${1001 + index}`;
+        if (v.includes('tenant')) return ['NA', 'EU', 'APAC', 'NA'][index % 4];
+        if (v.includes('region')) return ['CA', 'US', 'EU', 'APAC'][index % 4];
+        if (v.includes('priority')) return ['High', 'Normal', 'Low', 'High'][index % 4];
+        if (v.includes('owner')) return ['Ana', 'Noah', 'Maya', 'Liam'][index % 4];
+        if (v.includes('token')) return 'demo-token';
+        if (v.includes('email')) return `person${index + 1}@example.com`;
+        return `${10001 + index}`;
+      }
+
+      function stampedName(prefix) {
+        return `${prefix} ${new Date().toISOString().slice(0, 19).replace('T', ' ')}`;
+      }
+
+      function saveNamedItem(storeName, selectId, defaultName, value, message) {
+        const name = prompt('Name:', defaultName);
+        if (!name) return;
+        const items = getStore(storeName);
+        items[name] = { ...value, savedAt: new Date().toISOString() };
+        setStore(storeName, items);
+        renderSavedLibrary();
+        $(selectId).value = name;
+        toast(message, 'good');
+      }
+
+      function saveCurrentRequest() {
+        const cfg = readForm();
+        delete cfg.bulkInput;
+        delete cfg.mappings;
+        delete cfg.sampleJson;
+        delete cfg.discoveredPaths;
+        saveNamedItem('requests', 'requestSelect', $('url').value.trim() || 'Saved Request', cfg, 'Request saved locally.');
+      }
+
+      function loadSavedRequest() {
+        const name = $('requestSelect').value;
+        const requests = getStore('requests');
+        if (!name || !requests[name]) return toast('Select a saved request first.', 'bad');
+        const current = readForm();
+        writeForm({ ...current, ...requests[name], bulkInput: current.bulkInput, mappings: current.mappings, sampleJson: current.sampleJson, discoveredPaths: current.discoveredPaths });
+        saveSettings();
+        toast('Saved request loaded.', 'good');
+      }
+
+      function saveCurrentRun() {
+        if (!state.results.length) return toast('Run requests before saving responses.', 'bad');
+        saveNamedItem('responses', 'responseSelect', stampedName('Bulk Run'), {
+          config: readForm(),
+          results: state.results,
+          mappedRows: state.results.map(resultToRow)
+        }, 'Run responses saved locally.');
+      }
+
+      function loadSavedResponse() {
+        const name = $('responseSelect').value;
+        const responses = getStore('responses');
+        if (!name || !responses[name]) return toast('Select a saved run first.', 'bad');
+        const saved = responses[name];
+        if (saved.config) writeForm(saved.config);
+        state.results = Array.isArray(saved.results) ? saved.results : [];
+        renderResults();
+        saveSettings();
+        toast('Saved run loaded.', 'good');
+      }
+
+      function deleteNamedItem(storeName, selectId, message) {
+        const name = $(selectId).value;
+        if (!name) return;
+        const items = getStore(storeName);
+        delete items[name];
+        setStore(storeName, items);
+        renderSavedLibrary();
+        toast(message, 'good');
+      }
+
+      function exportLibrary() {
+        const payload = {
+          app: 'api-bulk-runner',
+          version: 1,
+          exportedAt: new Date().toISOString(),
+          settings: readForm(),
+          templates: getStore('templates'),
+          requests: getStore('requests'),
+          responses: getStore('responses')
+        };
+        const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+        download(`api-bulk-runner-library-${stamp}.json`, JSON.stringify(payload, null, 2), 'application/json');
+      }
+
+      async function importLibraryFile(file) {
+        if (!file) return;
+        try {
+          const payload = JSON.parse(await file.text());
+          ['templates', 'requests', 'responses'].forEach(name => {
+            if (payload[name] && typeof payload[name] === 'object') {
+              setStore(name, { ...getStore(name), ...payload[name] });
+            }
+          });
+          if (payload.settings && typeof payload.settings === 'object') {
+            writeForm(payload.settings);
+            saveSettings();
+          }
+          renderSavedLibrary();
+          toast('Library imported. Existing items with the same name were updated.', 'good');
+        } catch (err) {
+          toast(`Import failed: ${err.message}`, 'bad');
+        } finally {
+          $('importLibraryFile').value = '';
+        }
       }
 
       function bindEvents() {
@@ -1710,11 +2139,19 @@ node local-agent.js</pre>
         });
         $('authType').addEventListener('change', () => { updateAuthFields(); detectVariables(); saveSettings(); });
         $('runMode').addEventListener('change', () => { updateModeUI(); saveSettings(); });
+        $('demoSample').addEventListener('change', () => loadDemo($('demoSample').value));
+        $('loadSelectedDemoBtn').addEventListener('click', () => loadDemo($('demoSample').value));
         $('fillLocalAgentBtn').addEventListener('click', fillLocalAgentDefaults);
         $('testProxyBtn').addEventListener('click', testProxyConnection);
         $('parseBtn').addEventListener('click', () => parseBulkInput(true));
-        $('sampleRowsBtn').addEventListener('click', () => { $('bulkInput').value = sampleRows('single'); parseBulkInput(true); saveSettings(); });
-        $('clearRowsBtn').addEventListener('click', () => { $('bulkInput').value = ''; state.rows = []; state.rowColumns = []; renderInputPreview(); saveSettings(); });
+        $('sampleRowsBtn').addEventListener('click', () => {
+          $('bulkInput').value = sampleRows('single');
+          $('firstRowMode').value = 'yes';
+          parseBulkInput(true);
+          renderDemoArtifacts();
+          saveSettings();
+        });
+        $('clearRowsBtn').addEventListener('click', () => { $('bulkInput').value = ''; state.rows = []; state.rowColumns = []; renderInputPreview(); renderDemoArtifacts(); saveSettings(); });
         $('runBtn').addEventListener('click', () => runRows());
         $('runTopBtn').addEventListener('click', () => runRows());
         $('testBtn').addEventListener('click', () => runRows({ onlyFirst: true }));
@@ -1724,9 +2161,10 @@ node local-agent.js</pre>
         $('clearMapBtn').addEventListener('click', () => { state.mappings = []; renderMappings(); saveSettings(); });
         $('exportCsvBtn').addEventListener('click', () => exportRows('csv'));
         $('exportJsonBtn').addEventListener('click', () => exportRows('json'));
+        $('saveRunBtn').addEventListener('click', saveCurrentRun);
         $('copyCsvBtn').addEventListener('click', copyCsv);
         $('clearResultsBtn').addEventListener('click', () => { state.results = []; renderResults(); });
-        $('loadDemoBtn').addEventListener('click', loadDemo);
+        $('loadDemoBtn').addEventListener('click', () => loadDemo($('demoSample').value));
         $('themeBtn').addEventListener('click', () => {
           const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
           document.documentElement.setAttribute('data-theme', current);
@@ -1738,7 +2176,9 @@ node local-agent.js</pre>
           document.querySelectorAll('[data-sample]').forEach(t => t.classList.remove('active'));
           tab.classList.add('active');
           $('bulkInput').value = sampleRows(tab.dataset.sample);
+          if (tab.dataset.sample !== 'json') $('firstRowMode').value = 'yes';
           parseBulkInput(true);
+          renderDemoArtifacts();
           saveSettings();
         }));
         $('saveTemplateBtn').addEventListener('click', () => {
@@ -1766,20 +2206,32 @@ node local-agent.js</pre>
           setTemplates(templates);
           toast('Template deleted.', 'good');
         });
+        $('saveRequestBtn').addEventListener('click', saveCurrentRequest);
+        $('loadRequestBtn').addEventListener('click', loadSavedRequest);
+        $('deleteRequestBtn').addEventListener('click', () => deleteNamedItem('requests', 'requestSelect', 'Request deleted.'));
+        $('loadResponseBtn').addEventListener('click', loadSavedResponse);
+        $('deleteResponseBtn').addEventListener('click', () => deleteNamedItem('responses', 'responseSelect', 'Saved run deleted.'));
+        $('exportLibraryBtn').addEventListener('click', exportLibrary);
+        $('importLibraryBtn').addEventListener('click', () => $('importLibraryFile').click());
+        $('importLibraryFile').addEventListener('change', () => importLibraryFile($('importLibraryFile').files[0]));
       }
 
       const saveSettingsDebounced = debounce(saveSettings, 350);
 
       function init() {
+        renderDemoSelect();
         bindEvents();
         updateAuthFields();
-        renderTemplateSelect();
+        renderSavedLibrary();
         const restored = loadSettings();
         if (!restored) loadDemo();
         detectVariables();
         parseBulkInput(false);
+        renderInputColumnHints();
+        renderRequestMappings();
         renderMappings();
         renderSampleResponse();
+        renderDemoArtifacts();
         renderResults();
         updateModeUI();
       }
