@@ -11,7 +11,9 @@ This package includes:
 
 - Demo mode includes sample request/response scenarios for single-field and multi-field request mapping.
 - Request variables can be mapped explicitly to parsed bulk input columns.
+- Input columns can be edited in a table-style grid and pasted from spreadsheets.
 - Response fields can be mapped to result columns from discovered JSON paths.
+- Failed rows can be filtered and retried after a bulk run.
 - Bulk run templates are stored locally in the browser.
 - The template library can be exported/imported as JSON to move between systems.
 

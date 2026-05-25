@@ -75,9 +75,9 @@
       border: 1px solid rgba(148, 163, 184, 0.28);
       background: linear-gradient(135deg, rgba(255,255,255,0.86), rgba(255,255,255,0.54));
       backdrop-filter: blur(16px);
-      border-radius: 32px;
+      border-radius: 24px;
       box-shadow: var(--shadow);
-      padding: 28px;
+      padding: 20px 22px;
       margin-bottom: 18px;
     }
 
@@ -130,7 +130,7 @@
 
     h1 {
       margin: 0;
-      font-size: clamp(28px, 3.3vw, 52px);
+      font-size: clamp(28px, 2.7vw, 42px);
       line-height: 1.02;
       letter-spacing: -0.05em;
     }
@@ -138,14 +138,14 @@
     .hero-copy {
       position: relative;
       z-index: 1;
-      max-width: 960px;
-      margin: 18px 0 0;
+      max-width: 880px;
+      margin: 12px 0 0;
       color: var(--muted);
-      font-size: 17px;
-      line-height: 1.65;
+      font-size: 15px;
+      line-height: 1.55;
     }
 
-    .pill-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 18px; }
+    .pill-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
     .pill {
       border: 1px solid rgba(148, 163, 184, 0.28);
       background: rgba(255,255,255,0.62);
@@ -343,9 +343,10 @@
 
     .mapping-row {
       display: grid;
-      grid-template-columns: minmax(120px, 0.8fr) minmax(180px, 1.2fr) 44px;
+      grid-template-columns: minmax(120px, 0.8fr) minmax(180px, 1.2fr) minmax(90px, auto) 44px;
       gap: 8px;
       margin-bottom: 8px;
+      align-items: center;
     }
     .request-map-row {
       display: grid;
@@ -361,6 +362,7 @@
       flex-wrap: wrap;
     }
     .select-row select { flex: 1 1 220px; }
+    .grid-tools { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
     .bulk-grid-editor {
       overflow: auto;
       border: 1px solid rgba(148, 163, 184, .26);
@@ -370,6 +372,15 @@
     }
     [data-theme="dark"] .bulk-grid-editor { background: rgba(15,23,42,.38); }
     .bulk-grid-editor table { min-width: 100%; }
+    .bulk-grid-editor th { z-index: 2; }
+    .bulk-grid-editor .row-num {
+      min-width: 48px;
+      width: 48px;
+      color: var(--muted);
+      text-align: right;
+      background: var(--panel-strong);
+      font-family: var(--mono);
+    }
     .bulk-grid-editor input {
       border: 0;
       border-radius: 0;
@@ -384,6 +395,20 @@
       background: rgba(255,255,255,.72);
     }
     [data-theme="dark"] .bulk-grid-editor input:focus { background: rgba(15,23,42,.72); }
+    .run-validation {
+      border: 1px solid rgba(148, 163, 184, .26);
+      border-radius: 18px;
+      background: rgba(148, 163, 184, .06);
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .mapping-health {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
 
     .progress {
       height: 12px;
@@ -504,16 +529,13 @@
         </div>
       </div>
       <p class="hero-copy">
-        Build API requests with variables, paste a list of customer numbers or CSV rows, run the request in bulk, automatically discover useful JSON response fields, and export a clean table. Browser mode works for CORS-enabled APIs; Local Agent mode gives you Postman-like coverage for APIs that block browser calls.
+        Build variable-based API requests, run them against tabular input, map JSON responses into clean result tables, and export the output.
       </p>
       <div class="pill-row">
         <span class="pill">GET / POST / PUT / PATCH / DELETE</span>
-        <span class="pill">Smart {{variable}} detection</span>
-        <span class="pill">Auto JSON field mapping</span>
-        <span class="pill">Bulk CSV / TSV / JSON input</span>
-        <span class="pill">Export CSV / JSON</span>
-        <span class="pill">Saved templates</span>
-        <span class="pill">Local Agent for CORS-blocked APIs</span>
+        <span class="pill">Bulk input mapping</span>
+        <span class="pill">JSON response mapping</span>
+        <span class="pill">Template library</span>
       </div>
     </section>
 
@@ -541,7 +563,7 @@
             <label for="demoSample">Demo sample</label>
             <div class="select-row">
               <select id="demoSample"></select>
-              <button class="btn small" id="loadSelectedDemoBtn" type="button">Load Sample</button>
+              <button class="btn small" id="loadSelectedDemoBtn" type="button">Load Demo Template</button>
             </div>
           </div>
 
@@ -667,6 +689,12 @@
             <label for="bulkInput">Bulk values</label>
             <textarea id="bulkInput" class="mono" spellcheck="false" placeholder="10001&#10;10002&#10;10003"></textarea>
             <div id="bulkGridEditor" class="bulk-grid-editor hide"></div>
+            <div class="grid-tools hide" id="bulkGridTools">
+              <button class="btn small" id="addGridRowBtn" type="button">Add Row</button>
+              <button class="btn small" id="deleteEmptyRowsBtn" type="button">Delete Empty Rows</button>
+              <button class="btn small ghost" id="clearGridValuesBtn" type="button">Clear Values</button>
+              <span class="mini">Paste rows copied from Excel or Google Sheets into any cell.</span>
+            </div>
           </div>
 
           <div class="two">
@@ -735,6 +763,7 @@
               </select>
             </div>
           </div>
+          <div class="run-validation" id="runValidation"></div>
           <div class="toolbar">
             <button class="btn primary" id="runBtn" type="button">▶ Run Bulk Requests</button>
             <button class="btn" id="testBtn" type="button">⚡ Test First Row</button>
@@ -760,6 +789,7 @@
           </div>
 
           <div id="mappingList" style="margin-top: 14px;"></div>
+          <div id="mappingPreview" class="smart-box" style="margin-top: 12px;"></div>
 
           <details>
             <summary>Sample response / discovered paths</summary>
@@ -788,8 +818,14 @@
           </div>
 
           <div class="result-actions">
-            <button class="btn" id="exportCsvBtn" type="button">⬇ Export CSV</button>
-            <button class="btn" id="exportJsonBtn" type="button">⬇ Export JSON</button>
+            <select id="resultFilter" style="flex: 1 1 180px;">
+              <option value="all">Show all results</option>
+              <option value="failed">Show failed only</option>
+            </select>
+            <button class="btn" id="retryFailedBtn" type="button">Retry Failed</button>
+            <button class="btn" id="exportCsvBtn" type="button">⬇ Export Mapped CSV</button>
+            <button class="btn" id="exportMappedJsonBtn" type="button">⬇ Export Mapped JSON</button>
+            <button class="btn" id="exportJsonBtn" type="button">⬇ Export Raw JSON</button>
             <button class="btn" id="copyCsvBtn" type="button">📋 Copy CSV</button>
             <button class="btn ghost" id="clearResultsBtn" type="button">Clear Results</button>
           </div>
@@ -802,7 +838,7 @@
         <section class="card">
           <div class="section-title">
             <div>
-              <h2>Saved Templates</h2>
+              <h2>Template Library</h2>
               <p>Save and transfer bulk run templates with request and response mappings.</p>
             </div>
           </div>
@@ -839,7 +875,7 @@
       </div>
     </main>
 
-    <p class="footer-note">Built as a zero-dependency standalone HTML/CSS/JavaScript app. Upload this file as <span class="mono">index.html</span> to your ReaderNook Lab app folder.</p>
+    <p class="footer-note" style="display: none;">Built as a zero-dependency standalone HTML/CSS/JavaScript app. Upload this file as <span class="mono">index.html</span> to your ReaderNook Lab app folder.</p>
   </div>
 
   <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true" aria-label="Row details">
@@ -872,6 +908,8 @@
         sampleJson: null,
         discoveredPaths: [],
         demoScenario: 'customerLookup',
+        resultFilter: 'all',
+        gridMinRows: 4,
         running: false,
         aborters: [],
         runStartedAt: 0
@@ -1120,6 +1158,7 @@
         renderRequestMappings();
         renderDemoArtifacts();
         renderBulkGridEditor();
+        renderRunValidation();
       }
 
       function renderVariables() {
@@ -1207,10 +1246,10 @@
         const vars = state.variables.length ? state.variables : ['value'];
         const text = $('bulkInput').value.trim();
         if (!text || text.startsWith('[')) {
-          return Array.from({ length: 4 }, () => vars.map(() => ''));
+          return Array.from({ length: state.gridMinRows }, () => vars.map(() => ''));
         }
         const { matrix } = parseDelimitedMatrix(text, '\t');
-        if (!matrix.length) return Array.from({ length: 4 }, () => vars.map(() => ''));
+        if (!matrix.length) return Array.from({ length: state.gridMinRows }, () => vars.map(() => ''));
         const headerMode = $('firstRowMode').value;
         const firstIsHeader = headerMode === 'yes' || (headerMode === 'auto' && looksLikeHeader(matrix[0] || []));
         const headers = firstIsHeader ? matrix[0] : inferHeaders(matrix[0]?.length || 0);
@@ -1219,7 +1258,7 @@
           const idx = headers.findIndex(h => normalizeName(h) === normalizeName(variable));
           return idx >= 0 ? (cells[idx] ?? '') : '';
         }));
-        while (rows.length < 4) rows.push(vars.map(() => ''));
+        while (rows.length < state.gridMinRows) rows.push(vars.map(() => ''));
         return rows;
       }
 
@@ -1241,6 +1280,7 @@
         const isGridMode = currentInputMode() === 'single';
         $('bulkInput').classList.toggle('hide', isGridMode);
         $('bulkGridEditor').classList.toggle('hide', !isGridMode);
+        $('bulkGridTools').classList.toggle('hide', !isGridMode);
         if (!isGridMode) return;
 
         normalizeBulkInputColumns(false);
@@ -1248,9 +1288,10 @@
         const rows = bulkInputToGridRows();
         $('bulkGridEditor').innerHTML = `
           <table>
-            <thead><tr>${vars.map(v => `<th>${escapeHtml(v)}</th>`).join('')}</tr></thead>
+            <thead><tr><th class="row-num">#</th>${vars.map(v => `<th>${escapeHtml(v)}</th>`).join('')}</tr></thead>
             <tbody>${rows.map((row, rowIdx) => `
               <tr data-grid-row="${rowIdx}">
+                <td class="row-num">${rowIdx + 1}</td>
                 ${vars.map((_, colIdx) => `<td><input data-grid-col="${colIdx}" value="${escapeHtml(row[colIdx] ?? '')}" /></td>`).join('')}
               </tr>
             `).join('')}</tbody>
@@ -1298,12 +1339,40 @@
         saveSettings();
       }
 
+      function addGridRow() {
+        state.gridMinRows = Math.max(state.gridMinRows + 1, bulkInputToGridRows().length + 1);
+        renderBulkGridEditor();
+        saveSettingsDebounced();
+      }
+
+      function deleteEmptyGridRows() {
+        syncGridToBulkInput();
+        state.gridMinRows = 4;
+        renderBulkGridEditor();
+        parseBulkInput(true);
+        saveSettings();
+      }
+
+      function clearGridValues() {
+        const vars = state.variables.length ? state.variables : ['value'];
+        state.gridMinRows = 4;
+        $('bulkInput').value = `${vars.map(v => delimitedCell(v, '\t')).join('\t')}\n`;
+        $('firstRowMode').value = 'yes';
+        state.rows = [];
+        state.rowColumns = vars;
+        renderBulkGridEditor();
+        renderInputPreview();
+        renderRunValidation();
+        saveSettings();
+      }
+
       function updateModeUI() {
         const mode = $('runMode').value;
         $('proxyField').classList.toggle('hide', mode !== 'proxy');
         $('demoSampleField').classList.toggle('hide', mode !== 'demo');
         $('modeBadge').textContent = mode === 'demo' ? 'Demo mode' : mode === 'proxy' ? 'Local Agent / Proxy mode' : 'Browser mode';
         $('modeBadge').className = 'badge ' + (mode === 'direct' ? 'warn' : mode === 'proxy' ? 'good' : '');
+        renderRunValidation();
       }
 
       function localAgentHeaders() {
@@ -1405,6 +1474,7 @@
           state.rows = [];
           state.rowColumns = [];
           renderInputPreview();
+          renderRunValidation();
           return;
         }
 
@@ -1440,6 +1510,7 @@
           state.rowColumns = unique(rows.flatMap(row => Object.keys(row)));
           smartColumnMatch();
           renderInputPreview();
+          renderRunValidation();
           if (showToast) toast(`Parsed ${rows.length} row${rows.length === 1 ? '' : 's'}.`, 'good');
         } catch (err) {
           toast(err.message || 'Could not parse bulk input.', 'bad');
@@ -1499,6 +1570,7 @@
         });
         if (!vars.length) {
           target.innerHTML = '<div class="empty">No request variables detected yet.</div>';
+          renderRunValidation();
           return;
         }
         const optionsFor = (variable) => {
@@ -1522,8 +1594,10 @@
             if (select.value) state.requestMappings[variable] = select.value;
             else delete state.requestMappings[variable];
             saveSettingsDebounced();
+            renderRunValidation();
           });
         });
+        renderRunValidation();
       }
 
       function applyRequestMappings(row) {
@@ -1533,6 +1607,36 @@
           if (column && Object.prototype.hasOwnProperty.call(row, column)) mapped[variable] = row[column];
         });
         return mapped;
+      }
+
+      function variableHasInputColumn(variable) {
+        const mappedColumn = state.requestMappings[variable];
+        return state.rowColumns.some(col => normalizeName(col) === normalizeName(variable))
+          || (mappedColumn && state.rowColumns.some(col => normalizeName(col) === normalizeName(mappedColumn)));
+      }
+
+      function missingRequestColumns() {
+        if (!state.variables.length || !state.rows.length) return [];
+        return state.variables.filter(variable => !variableHasInputColumn(variable));
+      }
+
+      function renderRunValidation() {
+        const target = $('runValidation');
+        if (!target) return;
+        const missing = missingRequestColumns();
+        const matched = state.variables.filter(variable => variableHasInputColumn(variable)).length;
+        const needsUrl = $('runMode').value !== 'demo' && !$('url').value.trim();
+        const canRun = Boolean(state.rows.length) && !missing.length && !needsUrl;
+        target.innerHTML = `
+          <div class="status-line">
+            <span class="badge ${matched === state.variables.length ? 'good' : 'warn'}">${matched}/${state.variables.length || 0} input columns matched</span>
+            <span class="badge ${state.rows.length ? 'good' : 'warn'}">${state.rows.length} rows parsed</span>
+            <span class="badge ${state.mappings.length ? 'good' : 'warn'}">${state.mappings.length} response fields mapped</span>
+            ${needsUrl ? '<span class="badge bad">URL required</span>' : ''}
+            ${missing.length ? `<span class="badge bad">Missing ${missing.map(v => escapeHtml(v)).join(', ')}</span>` : ''}
+          </div>
+        `;
+        $('runBtn').disabled = state.running || !canRun;
       }
 
       function parseHeaders(text, row) {
@@ -1845,21 +1949,30 @@
         $('mappingBadge').textContent = `${state.mappings.length} field${state.mappings.length === 1 ? '' : 's'}`;
         if (!state.mappings.length) {
           $('mappingList').innerHTML = '<div class="empty">No mapping yet. Use “Auto-map from Sample” or add fields manually.</div>';
+          $('mappingPreview').innerHTML = '<h3>Mapped columns</h3><div class="mini">No response columns mapped yet.</div>';
+          renderRunValidation();
           return;
         }
         $('mappingList').innerHTML = state.mappings.map((m, idx) => `
           <div class="mapping-row">
             <input data-map-col="${idx}" value="${escapeHtml(m.column)}" placeholder="Column name" />
             <input data-map-path="${idx}" class="mono" value="${escapeHtml(m.path)}" placeholder="$.customer.name" />
+            <div class="mapping-health">${mappingStatusHtml(m)}</div>
             <button class="btn small danger" type="button" data-map-del="${idx}" title="Remove">×</button>
           </div>
         `).join('');
+        $('mappingPreview').innerHTML = `
+          <h3>Mapped columns</h3>
+          <div class="smart-list">${state.mappings.map(m => `<span class="token">${escapeHtml(m.column || m.path)}</span>`).join('')}</div>
+        `;
         document.querySelectorAll('[data-map-col]').forEach(input => input.addEventListener('input', () => {
           state.mappings[Number(input.dataset.mapCol)].column = input.value;
+          renderRunValidation();
           saveSettingsDebounced();
         }));
         document.querySelectorAll('[data-map-path]').forEach(input => input.addEventListener('input', () => {
           state.mappings[Number(input.dataset.mapPath)].path = input.value;
+          renderRunValidation();
           saveSettingsDebounced();
         }));
         document.querySelectorAll('[data-map-del]').forEach(btn => btn.addEventListener('click', () => {
@@ -1867,6 +1980,14 @@
           renderMappings();
           saveSettingsDebounced();
         }));
+        renderRunValidation();
+      }
+
+      function mappingStatusHtml(mapping) {
+        if (!state.sampleJson) return '<span class="badge">No sample</span>';
+        const value = getPath(state.sampleJson, mapping.path);
+        const hasValue = value !== '';
+        return `<span class="badge ${hasValue ? 'good' : 'bad'}">${hasValue ? 'Resolves' : 'Missing'}</span>`;
       }
 
       function getPath(obj, path) {
@@ -1919,14 +2040,22 @@
           return;
         }
 
-        const rows = state.results.map(resultToRow);
+        const visibleResults = state.results
+          .map((result, index) => ({ result, index }))
+          .filter(item => state.resultFilter !== 'failed' || item.result.error || item.result.status >= 400);
+        if (!visibleResults.length) {
+          $('resultsTable').innerHTML = '<div class="empty">No results match the current filter.</div>';
+          return;
+        }
+
+        const rows = visibleResults.map(item => resultToRow(item.result));
         const cols = unique(rows.flatMap(row => Object.keys(row)));
         const html = `
           <div class="table-wrap">
             <table>
               <thead><tr>${cols.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead>
               <tbody>${rows.map((row, idx) => `
-                <tr data-result-row="${idx}" title="Click for raw response">
+                <tr data-result-row="${visibleResults[idx].index}" title="Click for raw response">
                   ${cols.map(c => {
                     const val = row[c] ?? '';
                     const cls = c === 'HTTP Status'
@@ -1952,9 +2081,9 @@
 
       function setRunning(isRunning) {
         state.running = isRunning;
-        $('runBtn').disabled = isRunning;
         $('testBtn').disabled = isRunning;
         $('stopBtn').disabled = !isRunning;
+        renderRunValidation();
         renderResults();
       }
 
@@ -1963,6 +2092,12 @@
         parseBulkInput(false);
         if (!state.rows.length) {
           toast('Add or parse at least one input row.', 'bad');
+          return;
+        }
+        const missing = missingRequestColumns();
+        if (missing.length) {
+          toast(`Missing input columns: ${missing.join(', ')}`, 'bad');
+          renderRunValidation();
           return;
         }
         if ($('runMode').value !== 'demo' && !$('url').value.trim()) {
@@ -2044,6 +2179,45 @@
         }
       }
 
+      async function retryFailedRows() {
+        const failed = state.results
+          .map((result, index) => ({ result, index }))
+          .filter(item => item.result.error || item.result.status >= 400);
+        if (!failed.length) {
+          toast('No failed rows to retry.', 'bad');
+          return;
+        }
+        setRunning(true);
+        for (const item of failed) {
+          if (!state.running) break;
+          try {
+            const out = await sendWithRetries(item.result.input, item.index);
+            const response = out.response;
+            state.results[item.index] = {
+              input: out.requestInput || item.result.input,
+              request: { ...out.request, headers: maskSensitiveHeaders(out.request.headers) },
+              status: response.status,
+              statusText: response.statusText,
+              durationMs: out.durationMs,
+              attempts: out.attempts,
+              json: response.json,
+              text: response.text,
+              rawSaved: $('saveRaw').value === 'yes' ? (response.json ?? response.text) : undefined,
+              error: response.parseError && !response.json ? `Response is not JSON: ${response.parseError}` : ''
+            };
+          } catch (err) {
+            state.results[item.index] = {
+              ...item.result,
+              attempts: Number($('retries').value) + 1,
+              error: err.name === 'AbortError' ? 'Request stopped or timed out.' : (err.message || String(err))
+            };
+          }
+          renderResults();
+        }
+        setRunning(false);
+        toast('Retry complete.', 'good');
+      }
+
       function maskSensitiveHeaders(headers = {}) {
         const out = {};
         Object.entries(headers).forEach(([k, v]) => {
@@ -2091,7 +2265,8 @@
         const rows = state.results.map(resultToRow);
         const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
         if (format === 'csv') download(`api-bulk-results-${stamp}.csv`, toCsv(rows), 'text/csv');
-        else download(`api-bulk-results-${stamp}.json`, JSON.stringify(state.results, null, 2), 'application/json');
+        else if (format === 'mappedJson') download(`api-bulk-results-mapped-${stamp}.json`, JSON.stringify(rows, null, 2), 'application/json');
+        else download(`api-bulk-results-raw-${stamp}.json`, JSON.stringify(state.results, null, 2), 'application/json');
       }
 
       async function copyCsv() {
@@ -2222,6 +2397,9 @@
         $('loadSelectedDemoBtn').addEventListener('click', () => loadDemo($('demoSample').value));
         $('fillLocalAgentBtn').addEventListener('click', fillLocalAgentDefaults);
         $('testProxyBtn').addEventListener('click', testProxyConnection);
+        $('addGridRowBtn').addEventListener('click', addGridRow);
+        $('deleteEmptyRowsBtn').addEventListener('click', deleteEmptyGridRows);
+        $('clearGridValuesBtn').addEventListener('click', clearGridValues);
         $('applyInputColumnsBtn').addEventListener('click', () => {
           normalizeBulkInputColumns(true);
           parseBulkInput(true);
@@ -2248,7 +2426,10 @@
         $('autoMapBtn').addEventListener('click', () => autoMapFromJson(state.sampleJson));
         $('addMapBtn').addEventListener('click', () => addMapping('New Field', '$.'));
         $('clearMapBtn').addEventListener('click', () => { state.mappings = []; renderMappings(); saveSettings(); });
+        $('resultFilter').addEventListener('change', () => { state.resultFilter = $('resultFilter').value; renderResults(); });
+        $('retryFailedBtn').addEventListener('click', retryFailedRows);
         $('exportCsvBtn').addEventListener('click', () => exportRows('csv'));
+        $('exportMappedJsonBtn').addEventListener('click', () => exportRows('mappedJson'));
         $('exportJsonBtn').addEventListener('click', () => exportRows('json'));
         $('copyCsvBtn').addEventListener('click', copyCsv);
         $('clearResultsBtn').addEventListener('click', () => { state.results = []; renderResults(); });
@@ -2316,6 +2497,7 @@
         renderSampleResponse();
         renderDemoArtifacts();
         renderBulkGridEditor();
+        $('resultFilter').value = state.resultFilter;
         renderResults();
         updateModeUI();
       }
