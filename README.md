@@ -12,8 +12,8 @@ This package includes:
 - Demo mode includes sample request/response scenarios for single-field and multi-field request mapping.
 - Request variables can be mapped explicitly to parsed bulk input columns.
 - Response fields can be mapped to result columns from discovered JSON paths.
-- Requests, run responses, and bulk run templates are stored locally in the browser.
-- The saved library can be exported/imported as JSON to move between systems.
+- Bulk run templates are stored locally in the browser.
+- The template library can be exported/imported as JSON to move between systems.
 
 ## Browser-only mode
 

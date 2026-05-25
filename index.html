@@ -361,6 +361,29 @@
       flex-wrap: wrap;
     }
     .select-row select { flex: 1 1 220px; }
+    .bulk-grid-editor {
+      overflow: auto;
+      border: 1px solid rgba(148, 163, 184, .26);
+      border-radius: 18px;
+      background: rgba(255,255,255,.48);
+      max-height: 340px;
+    }
+    [data-theme="dark"] .bulk-grid-editor { background: rgba(15,23,42,.38); }
+    .bulk-grid-editor table { min-width: 100%; }
+    .bulk-grid-editor input {
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      min-width: 150px;
+      padding: 10px 11px;
+      font-family: var(--mono);
+    }
+    .bulk-grid-editor input:focus {
+      box-shadow: inset 0 0 0 2px rgba(79, 70, 229, .40);
+      background: rgba(255,255,255,.72);
+    }
+    [data-theme="dark"] .bulk-grid-editor input:focus { background: rgba(15,23,42,.72); }
 
     .progress {
       height: 12px;
@@ -478,8 +501,6 @@
         </div>
         <div class="toolbar">
           <button class="btn" id="themeBtn" type="button">🌙 Theme</button>
-          <button class="btn" id="loadDemoBtn" type="button">✨ Load Demo</button>
-          <button class="btn primary" id="runTopBtn" type="button">▶ Run Bulk</button>
         </div>
       </div>
       <p class="hero-copy">
@@ -491,7 +512,7 @@
         <span class="pill">Auto JSON field mapping</span>
         <span class="pill">Bulk CSV / TSV / JSON input</span>
         <span class="pill">Export CSV / JSON</span>
-        <span class="pill">Saved requests, runs, and templates</span>
+        <span class="pill">Saved templates</span>
         <span class="pill">Local Agent for CORS-blocked APIs</span>
       </div>
     </section>
@@ -623,7 +644,7 @@
           <div class="section-title">
             <div>
               <h2>2. Bulk Input</h2>
-              <p>Paste one value per line, CSV/TSV with headers, or a JSON array.</p>
+              <p>Paste tabular columns from Excel, CSV/TSV with headers, or a JSON array.</p>
             </div>
             <span class="badge" id="rowCountBadge">0 rows</span>
           </div>
@@ -637,11 +658,15 @@
           <div class="smart-box" style="margin-top: 12px;">
             <h3>Needed input columns</h3>
             <div id="inputColumnHints" class="smart-list"></div>
+            <div class="toolbar" style="margin-top: 10px;">
+              <button class="btn small" id="applyInputColumnsBtn" type="button">Use These Columns</button>
+            </div>
           </div>
 
-          <div class="field" style="margin-top: 12px;">
+          <div class="field" id="bulkInputField" style="margin-top: 12px;">
             <label for="bulkInput">Bulk values</label>
             <textarea id="bulkInput" class="mono" spellcheck="false" placeholder="10001&#10;10002&#10;10003"></textarea>
+            <div id="bulkGridEditor" class="bulk-grid-editor hide"></div>
           </div>
 
           <div class="two">
@@ -765,7 +790,6 @@
           <div class="result-actions">
             <button class="btn" id="exportCsvBtn" type="button">⬇ Export CSV</button>
             <button class="btn" id="exportJsonBtn" type="button">⬇ Export JSON</button>
-            <button class="btn good" id="saveRunBtn" type="button">💾 Save Run</button>
             <button class="btn" id="copyCsvBtn" type="button">📋 Copy CSV</button>
             <button class="btn ghost" id="clearResultsBtn" type="button">Clear Results</button>
           </div>
@@ -779,7 +803,7 @@
           <div class="section-title">
             <div>
               <h2>Saved Templates</h2>
-              <p>Save bulk run templates with request and response mappings.</p>
+              <p>Save and transfer bulk run templates with request and response mappings.</p>
             </div>
           </div>
           <div class="template-row">
@@ -792,32 +816,6 @@
             <button class="btn" id="exportLibraryBtn" type="button">⬇ Export Library</button>
             <button class="btn" id="importLibraryBtn" type="button">⬆ Import Library</button>
             <input id="importLibraryFile" type="file" accept="application/json,.json" class="hide" />
-          </div>
-        </section>
-
-        <section class="card">
-          <div class="section-title">
-            <div>
-              <h2>Saved Requests & Responses</h2>
-              <p>Keep request definitions and run responses locally, similar to a lightweight Postman collection.</p>
-            </div>
-          </div>
-          <div class="field">
-            <label for="requestSelect">Saved requests</label>
-            <div class="template-row">
-              <select id="requestSelect" style="flex: 1 1 220px;"></select>
-              <button class="btn" id="saveRequestBtn" type="button">Save</button>
-              <button class="btn" id="loadRequestBtn" type="button">Load</button>
-              <button class="btn danger" id="deleteRequestBtn" type="button">Delete</button>
-            </div>
-          </div>
-          <div class="field">
-            <label for="responseSelect">Saved runs / responses</label>
-            <div class="template-row">
-              <select id="responseSelect" style="flex: 1 1 220px;"></select>
-              <button class="btn" id="loadResponseBtn" type="button">Load</button>
-              <button class="btn danger" id="deleteResponseBtn" type="button">Delete</button>
-            </div>
           </div>
         </section>
 
@@ -881,9 +879,7 @@
 
       const storageKeys = {
         settings: 'apiBulkRunner.settings.v1',
-        templates: 'apiBulkRunner.templates.v1',
-        requests: 'apiBulkRunner.requests.v1',
-        responses: 'apiBulkRunner.responses.v1'
+        templates: 'apiBulkRunner.templates.v1'
       };
 
       const controls = [
@@ -985,6 +981,10 @@
         return [...new Set(items.filter(Boolean))];
       }
 
+      function currentInputMode() {
+        return document.querySelector('[data-sample].active')?.dataset.sample || 'single';
+      }
+
       function readForm() {
         const cfg = {};
         controls.forEach(id => cfg[id] = $(id)?.value ?? '');
@@ -1019,6 +1019,7 @@
         renderRequestMappings();
         renderSampleResponse();
         renderDemoArtifacts();
+        renderBulkGridEditor();
         updateModeUI();
       }
 
@@ -1068,18 +1069,8 @@
           : '<option value="">No saved templates yet</option>';
       }
 
-      function renderNamedSelect(selectId, storeName, emptyText) {
-        const items = getStore(storeName);
-        const names = Object.keys(items).sort((a, b) => a.localeCompare(b));
-        $(selectId).innerHTML = names.length
-          ? names.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('')
-          : `<option value="">${escapeHtml(emptyText)}</option>`;
-      }
-
       function renderSavedLibrary() {
         renderTemplateSelect();
-        renderNamedSelect('requestSelect', 'requests', 'No saved requests yet');
-        renderNamedSelect('responseSelect', 'responses', 'No saved runs yet');
       }
 
       function renderDemoSelect() {
@@ -1128,6 +1119,7 @@
         renderInputColumnHints();
         renderRequestMappings();
         renderDemoArtifacts();
+        renderBulkGridEditor();
       }
 
       function renderVariables() {
@@ -1150,6 +1142,160 @@
         if (!target) return;
         const vars = state.variables.length ? state.variables : ['value'];
         target.innerHTML = vars.map(v => `<span class="token">${escapeHtml(v)}</span>`).join('');
+      }
+
+      function delimitedCell(value, delimiter = ',') {
+        const str = String(value ?? '');
+        const needsQuotes = delimiter === ','
+          ? /[",\n\r]/.test(str)
+          : new RegExp(`[\\${delimiter}"\\n\\r]`).test(str);
+        return needsQuotes ? `"${str.replace(/"/g, '""')}"` : str;
+      }
+
+      function parseDelimitedMatrix(text, fallbackDelimiter = '\t') {
+        const delimiter = detectDelimiter(text) || fallbackDelimiter;
+        return {
+          delimiter,
+          matrix: text.split(/\r?\n/).filter(line => line.trim()).map(line => splitCsvLine(line, delimiter))
+        };
+      }
+
+      function normalizeBulkInputColumns(force = false) {
+        const vars = state.variables.length ? state.variables : ['value'];
+        if (!vars.length) return false;
+        const text = $('bulkInput').value.trim();
+        if (text.startsWith('[')) return false;
+        const activeMode = currentInputMode();
+        const inputDelimiter = text ? (detectDelimiter(text) || (activeMode === 'single' ? '\t' : ',')) : ',';
+        const outputDelimiter = activeMode === 'single' ? '\t' : inputDelimiter;
+        if (!force && activeMode !== 'single') return false;
+
+        if (!text) {
+          $('bulkInput').value = `${vars.map(v => delimitedCell(v, outputDelimiter)).join(outputDelimiter)}\n`;
+          $('firstRowMode').value = 'yes';
+          return true;
+        }
+
+        const lines = text.split(/\r?\n/).filter(line => line.trim());
+        const matrix = lines.map(line => splitCsvLine(line, inputDelimiter));
+        const headerMode = $('firstRowMode').value;
+        const firstIsHeader = headerMode === 'yes' || (headerMode === 'auto' && looksLikeHeader(matrix[0] || []));
+        const originalHeaders = firstIsHeader ? matrix[0] : inferHeaders(matrix[0]?.length || 0);
+        const rows = firstIsHeader ? matrix.slice(1) : matrix;
+        const missing = vars.filter(v => !originalHeaders.some(h => normalizeName(h) === normalizeName(v)));
+        if (!force && !missing.length) return false;
+
+        const extras = originalHeaders.filter(h => h && !vars.some(v => normalizeName(v) === normalizeName(h)));
+        const headers = [...vars, ...extras];
+        const normalizedRows = rows.map(cells => {
+          const row = {};
+          originalHeaders.forEach((h, idx) => { row[h] = cells[idx] ?? ''; });
+          return headers.map(h => {
+            const match = originalHeaders.find(old => normalizeName(old) === normalizeName(h));
+            return match ? row[match] : '';
+          });
+        });
+        $('bulkInput').value = [
+          headers.map(v => delimitedCell(v, outputDelimiter)).join(outputDelimiter),
+          ...normalizedRows.map(row => row.map(v => delimitedCell(v, outputDelimiter)).join(outputDelimiter))
+        ].join('\n');
+        $('firstRowMode').value = 'yes';
+        return true;
+      }
+
+      function bulkInputToGridRows() {
+        const vars = state.variables.length ? state.variables : ['value'];
+        const text = $('bulkInput').value.trim();
+        if (!text || text.startsWith('[')) {
+          return Array.from({ length: 4 }, () => vars.map(() => ''));
+        }
+        const { matrix } = parseDelimitedMatrix(text, '\t');
+        if (!matrix.length) return Array.from({ length: 4 }, () => vars.map(() => ''));
+        const headerMode = $('firstRowMode').value;
+        const firstIsHeader = headerMode === 'yes' || (headerMode === 'auto' && looksLikeHeader(matrix[0] || []));
+        const headers = firstIsHeader ? matrix[0] : inferHeaders(matrix[0]?.length || 0);
+        const data = firstIsHeader ? matrix.slice(1) : matrix;
+        const rows = data.map(cells => vars.map(variable => {
+          const idx = headers.findIndex(h => normalizeName(h) === normalizeName(variable));
+          return idx >= 0 ? (cells[idx] ?? '') : '';
+        }));
+        while (rows.length < 4) rows.push(vars.map(() => ''));
+        return rows;
+      }
+
+      function syncGridToBulkInput() {
+        if (currentInputMode() !== 'single') return;
+        const vars = state.variables.length ? state.variables : ['value'];
+        const rows = [...document.querySelectorAll('[data-grid-row]')].map(tr =>
+          vars.map((_, idx) => tr.querySelector(`[data-grid-col="${idx}"]`)?.value ?? '')
+        );
+        const meaningfulRows = rows.filter(row => row.some(value => String(value).trim()));
+        $('bulkInput').value = [
+          vars.map(v => delimitedCell(v, '\t')).join('\t'),
+          ...meaningfulRows.map(row => row.map(v => delimitedCell(v, '\t')).join('\t'))
+        ].join('\n');
+        $('firstRowMode').value = 'yes';
+      }
+
+      function renderBulkGridEditor() {
+        const isGridMode = currentInputMode() === 'single';
+        $('bulkInput').classList.toggle('hide', isGridMode);
+        $('bulkGridEditor').classList.toggle('hide', !isGridMode);
+        if (!isGridMode) return;
+
+        normalizeBulkInputColumns(false);
+        const vars = state.variables.length ? state.variables : ['value'];
+        const rows = bulkInputToGridRows();
+        $('bulkGridEditor').innerHTML = `
+          <table>
+            <thead><tr>${vars.map(v => `<th>${escapeHtml(v)}</th>`).join('')}</tr></thead>
+            <tbody>${rows.map((row, rowIdx) => `
+              <tr data-grid-row="${rowIdx}">
+                ${vars.map((_, colIdx) => `<td><input data-grid-col="${colIdx}" value="${escapeHtml(row[colIdx] ?? '')}" /></td>`).join('')}
+              </tr>
+            `).join('')}</tbody>
+          </table>
+        `;
+        document.querySelectorAll('[data-grid-col]').forEach(input => {
+          input.addEventListener('input', () => {
+            syncGridToBulkInput();
+            parseBulkInput(false);
+            renderDemoArtifacts();
+            saveSettingsDebounced();
+          });
+        });
+        $('bulkGridEditor').onpaste = handleGridPaste;
+      }
+
+      function handleGridPaste(event) {
+        const target = event.target.closest('[data-grid-col]');
+        if (!target) return;
+        const text = event.clipboardData?.getData('text/plain') || '';
+        if (!text.trim()) return;
+        event.preventDefault();
+        const vars = state.variables.length ? state.variables : ['value'];
+        const startCol = Number(target.dataset.gridCol) || 0;
+        const startRow = Number(target.closest('[data-grid-row]')?.dataset.gridRow) || 0;
+        const { matrix } = parseDelimitedMatrix(text, '\t');
+        const data = looksLikeHeader(matrix[0] || []) ? matrix.slice(1) : matrix;
+        const currentRows = bulkInputToGridRows();
+        data.forEach((cells, rowOffset) => {
+          const rowIndex = startRow + rowOffset;
+          while (currentRows.length <= rowIndex) currentRows.push(vars.map(() => ''));
+          cells.forEach((cell, colOffset) => {
+            const colIndex = startCol + colOffset;
+            if (colIndex < vars.length) currentRows[rowIndex][colIndex] = cell;
+          });
+        });
+        $('bulkInput').value = [
+          vars.map(v => delimitedCell(v, '\t')).join('\t'),
+          ...currentRows.filter(row => row.some(value => String(value).trim())).map(row => row.map(v => delimitedCell(v, '\t')).join('\t'))
+        ].join('\n');
+        $('firstRowMode').value = 'yes';
+        parseBulkInput(true);
+        renderBulkGridEditor();
+        renderDemoArtifacts();
+        saveSettings();
       }
 
       function updateModeUI() {
@@ -1253,6 +1399,7 @@
       }
 
       function parseBulkInput(showToast = true) {
+        normalizeBulkInputColumns(false);
         const text = $('bulkInput').value.trim();
         if (!text) {
           state.rows = [];
@@ -1806,7 +1953,6 @@
       function setRunning(isRunning) {
         state.running = isRunning;
         $('runBtn').disabled = isRunning;
-        $('runTopBtn').disabled = isRunning;
         $('testBtn').disabled = isRunning;
         $('stopBtn').disabled = !isRunning;
         renderResults();
@@ -1998,6 +2144,7 @@
         renderMappings();
         renderSampleResponse();
         renderDemoArtifacts();
+        renderBulkGridEditor();
         saveSettings();
         toast('Demo sample loaded with request and response mappings.', 'good');
       }
@@ -2005,9 +2152,10 @@
       function sampleRows(mode) {
         const vars = state.variables.length ? state.variables : ['customerNumber'];
         if (mode === 'single' || mode === 'csv') {
-          const rows = [0, 1, 2].map(i => vars.map(v => sampleValueForVariable(v, i)).join(','));
-          rows.push(vars.map(v => /id|number|case|order/i.test(v) ? `${sampleValueForVariable(v, 9)}404` : sampleValueForVariable(v, 3)).join(','));
-          return `${vars.join(',')}\n${rows.join('\n')}`;
+          const delimiter = mode === 'single' ? '\t' : ',';
+          const rows = [0, 1, 2].map(i => vars.map(v => delimitedCell(sampleValueForVariable(v, i), delimiter)).join(delimiter));
+          rows.push(vars.map(v => delimitedCell(/id|number|case|order/i.test(v) ? `${sampleValueForVariable(v, 9)}404` : sampleValueForVariable(v, 3), delimiter)).join(delimiter));
+          return `${vars.map(v => delimitedCell(v, delimiter)).join(delimiter)}\n${rows.join('\n')}`;
         }
         if (mode === 'json') {
           return JSON.stringify([0, 1, 2].map(i => Object.fromEntries(vars.map(v => [v, sampleValueForVariable(v, i)]))), null, 2);
@@ -2029,80 +2177,13 @@
         return `${10001 + index}`;
       }
 
-      function stampedName(prefix) {
-        return `${prefix} ${new Date().toISOString().slice(0, 19).replace('T', ' ')}`;
-      }
-
-      function saveNamedItem(storeName, selectId, defaultName, value, message) {
-        const name = prompt('Name:', defaultName);
-        if (!name) return;
-        const items = getStore(storeName);
-        items[name] = { ...value, savedAt: new Date().toISOString() };
-        setStore(storeName, items);
-        renderSavedLibrary();
-        $(selectId).value = name;
-        toast(message, 'good');
-      }
-
-      function saveCurrentRequest() {
-        const cfg = readForm();
-        delete cfg.bulkInput;
-        delete cfg.mappings;
-        delete cfg.sampleJson;
-        delete cfg.discoveredPaths;
-        saveNamedItem('requests', 'requestSelect', $('url').value.trim() || 'Saved Request', cfg, 'Request saved locally.');
-      }
-
-      function loadSavedRequest() {
-        const name = $('requestSelect').value;
-        const requests = getStore('requests');
-        if (!name || !requests[name]) return toast('Select a saved request first.', 'bad');
-        const current = readForm();
-        writeForm({ ...current, ...requests[name], bulkInput: current.bulkInput, mappings: current.mappings, sampleJson: current.sampleJson, discoveredPaths: current.discoveredPaths });
-        saveSettings();
-        toast('Saved request loaded.', 'good');
-      }
-
-      function saveCurrentRun() {
-        if (!state.results.length) return toast('Run requests before saving responses.', 'bad');
-        saveNamedItem('responses', 'responseSelect', stampedName('Bulk Run'), {
-          config: readForm(),
-          results: state.results,
-          mappedRows: state.results.map(resultToRow)
-        }, 'Run responses saved locally.');
-      }
-
-      function loadSavedResponse() {
-        const name = $('responseSelect').value;
-        const responses = getStore('responses');
-        if (!name || !responses[name]) return toast('Select a saved run first.', 'bad');
-        const saved = responses[name];
-        if (saved.config) writeForm(saved.config);
-        state.results = Array.isArray(saved.results) ? saved.results : [];
-        renderResults();
-        saveSettings();
-        toast('Saved run loaded.', 'good');
-      }
-
-      function deleteNamedItem(storeName, selectId, message) {
-        const name = $(selectId).value;
-        if (!name) return;
-        const items = getStore(storeName);
-        delete items[name];
-        setStore(storeName, items);
-        renderSavedLibrary();
-        toast(message, 'good');
-      }
-
       function exportLibrary() {
         const payload = {
           app: 'api-bulk-runner',
           version: 1,
           exportedAt: new Date().toISOString(),
           settings: readForm(),
-          templates: getStore('templates'),
-          requests: getStore('requests'),
-          responses: getStore('responses')
+          templates: getStore('templates')
         };
         const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
         download(`api-bulk-runner-library-${stamp}.json`, JSON.stringify(payload, null, 2), 'application/json');
@@ -2112,17 +2193,15 @@
         if (!file) return;
         try {
           const payload = JSON.parse(await file.text());
-          ['templates', 'requests', 'responses'].forEach(name => {
-            if (payload[name] && typeof payload[name] === 'object') {
-              setStore(name, { ...getStore(name), ...payload[name] });
-            }
-          });
+          if (payload.templates && typeof payload.templates === 'object') {
+            setStore('templates', { ...getStore('templates'), ...payload.templates });
+          }
           if (payload.settings && typeof payload.settings === 'object') {
             writeForm(payload.settings);
             saveSettings();
           }
           renderSavedLibrary();
-          toast('Library imported. Existing items with the same name were updated.', 'good');
+          toast('Template library imported. Existing templates with the same name were updated.', 'good');
         } catch (err) {
           toast(`Import failed: ${err.message}`, 'bad');
         } finally {
@@ -2143,17 +2222,27 @@
         $('loadSelectedDemoBtn').addEventListener('click', () => loadDemo($('demoSample').value));
         $('fillLocalAgentBtn').addEventListener('click', fillLocalAgentDefaults);
         $('testProxyBtn').addEventListener('click', testProxyConnection);
-        $('parseBtn').addEventListener('click', () => parseBulkInput(true));
+        $('applyInputColumnsBtn').addEventListener('click', () => {
+          normalizeBulkInputColumns(true);
+          parseBulkInput(true);
+          renderBulkGridEditor();
+          renderDemoArtifacts();
+          saveSettings();
+        });
+        $('parseBtn').addEventListener('click', () => {
+          parseBulkInput(true);
+          renderBulkGridEditor();
+        });
         $('sampleRowsBtn').addEventListener('click', () => {
           $('bulkInput').value = sampleRows('single');
           $('firstRowMode').value = 'yes';
           parseBulkInput(true);
+          renderBulkGridEditor();
           renderDemoArtifacts();
           saveSettings();
         });
-        $('clearRowsBtn').addEventListener('click', () => { $('bulkInput').value = ''; state.rows = []; state.rowColumns = []; renderInputPreview(); renderDemoArtifacts(); saveSettings(); });
+        $('clearRowsBtn').addEventListener('click', () => { $('bulkInput').value = ''; state.rows = []; state.rowColumns = []; renderInputPreview(); renderBulkGridEditor(); renderDemoArtifacts(); saveSettings(); });
         $('runBtn').addEventListener('click', () => runRows());
-        $('runTopBtn').addEventListener('click', () => runRows());
         $('testBtn').addEventListener('click', () => runRows({ onlyFirst: true }));
         $('stopBtn').addEventListener('click', stopRun);
         $('autoMapBtn').addEventListener('click', () => autoMapFromJson(state.sampleJson));
@@ -2161,10 +2250,8 @@
         $('clearMapBtn').addEventListener('click', () => { state.mappings = []; renderMappings(); saveSettings(); });
         $('exportCsvBtn').addEventListener('click', () => exportRows('csv'));
         $('exportJsonBtn').addEventListener('click', () => exportRows('json'));
-        $('saveRunBtn').addEventListener('click', saveCurrentRun);
         $('copyCsvBtn').addEventListener('click', copyCsv);
         $('clearResultsBtn').addEventListener('click', () => { state.results = []; renderResults(); });
-        $('loadDemoBtn').addEventListener('click', () => loadDemo($('demoSample').value));
         $('themeBtn').addEventListener('click', () => {
           const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
           document.documentElement.setAttribute('data-theme', current);
@@ -2178,6 +2265,7 @@
           $('bulkInput').value = sampleRows(tab.dataset.sample);
           if (tab.dataset.sample !== 'json') $('firstRowMode').value = 'yes';
           parseBulkInput(true);
+          renderBulkGridEditor();
           renderDemoArtifacts();
           saveSettings();
         }));
@@ -2206,11 +2294,6 @@
           setTemplates(templates);
           toast('Template deleted.', 'good');
         });
-        $('saveRequestBtn').addEventListener('click', saveCurrentRequest);
-        $('loadRequestBtn').addEventListener('click', loadSavedRequest);
-        $('deleteRequestBtn').addEventListener('click', () => deleteNamedItem('requests', 'requestSelect', 'Request deleted.'));
-        $('loadResponseBtn').addEventListener('click', loadSavedResponse);
-        $('deleteResponseBtn').addEventListener('click', () => deleteNamedItem('responses', 'responseSelect', 'Saved run deleted.'));
         $('exportLibraryBtn').addEventListener('click', exportLibrary);
         $('importLibraryBtn').addEventListener('click', () => $('importLibraryFile').click());
         $('importLibraryFile').addEventListener('change', () => importLibraryFile($('importLibraryFile').files[0]));
@@ -2232,6 +2315,7 @@
         renderMappings();
         renderSampleResponse();
         renderDemoArtifacts();
+        renderBulkGridEditor();
         renderResults();
         updateModeUI();
       }
