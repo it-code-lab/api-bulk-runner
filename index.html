@@ -1,0 +1,1791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API Bulk Runner & Smart Response Mapper</title>
+  <meta name="description" content="Run GET, POST, PUT, PATCH and DELETE API requests in bulk, replace variables automatically, map JSON responses to clean tables, and export results." />
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --bg2: #eef2ff;
+      --panel: rgba(255, 255, 255, 0.86);
+      --panel-strong: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --soft: #e2e8f0;
+      --softer: #f1f5f9;
+      --brand: #4f46e5;
+      --brand2: #06b6d4;
+      --good: #059669;
+      --warn: #d97706;
+      --bad: #dc2626;
+      --shadow: 0 20px 50px rgba(15, 23, 42, 0.10);
+      --shadow2: 0 12px 30px rgba(15, 23, 42, 0.08);
+      --radius: 24px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    [data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #070b18;
+      --bg2: #111827;
+      --panel: rgba(15, 23, 42, 0.82);
+      --panel-strong: #101827;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --soft: #263244;
+      --softer: #111827;
+      --brand: #818cf8;
+      --brand2: #22d3ee;
+      --good: #34d399;
+      --warn: #fbbf24;
+      --bad: #f87171;
+      --shadow: 0 25px 70px rgba(0, 0, 0, 0.36);
+      --shadow2: 0 12px 34px rgba(0, 0, 0, 0.28);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      background:
+        radial-gradient(circle at top left, rgba(79, 70, 229, 0.22), transparent 34rem),
+        radial-gradient(circle at top right, rgba(6, 182, 212, 0.22), transparent 32rem),
+        linear-gradient(135deg, var(--bg), var(--bg2));
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    button, input, textarea, select { font: inherit; }
+    button { cursor: pointer; }
+
+    .app-shell {
+      width: min(1500px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 24px 0 60px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      background: linear-gradient(135deg, rgba(255,255,255,0.86), rgba(255,255,255,0.54));
+      backdrop-filter: blur(16px);
+      border-radius: 32px;
+      box-shadow: var(--shadow);
+      padding: 28px;
+      margin-bottom: 18px;
+    }
+
+    [data-theme="dark"] .hero {
+      background: linear-gradient(135deg, rgba(15,23,42,0.90), rgba(15,23,42,0.55));
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      width: 360px;
+      height: 360px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.16), transparent 64%);
+      right: -120px;
+      top: -140px;
+      pointer-events: none;
+    }
+
+    .hero-top, .toolbar, .row, .section-title, .status-line, .template-row, .auth-grid, .mapping-actions, .result-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .hero-top { justify-content: space-between; position: relative; z-index: 1; }
+    .brand-lockup { display: flex; gap: 14px; align-items: center; }
+    .logo {
+      width: 54px;
+      height: 54px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      color: white;
+      background: linear-gradient(135deg, #4f46e5, #06b6d4);
+      box-shadow: 0 16px 34px rgba(79, 70, 229, 0.25);
+      font-size: 25px;
+      font-weight: 900;
+    }
+
+    .eyebrow {
+      margin: 0 0 5px;
+      color: var(--brand);
+      font-weight: 800;
+      font-size: 12px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 3.3vw, 52px);
+      line-height: 1.02;
+      letter-spacing: -0.05em;
+    }
+
+    .hero-copy {
+      position: relative;
+      z-index: 1;
+      max-width: 960px;
+      margin: 18px 0 0;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.65;
+    }
+
+    .pill-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 18px; }
+    .pill {
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      background: rgba(255,255,255,0.62);
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    [data-theme="dark"] .pill { background: rgba(15,23,42,0.7); }
+
+    .btn {
+      border: 1px solid rgba(148, 163, 184, 0.32);
+      border-radius: 16px;
+      padding: 11px 15px;
+      background: var(--panel-strong);
+      color: var(--text);
+      font-weight: 800;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease;
+      white-space: nowrap;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: var(--shadow2); border-color: rgba(79, 70, 229, 0.42); }
+    .btn:active { transform: translateY(0); }
+    .btn.primary { border-color: transparent; color: white; background: linear-gradient(135deg, #4f46e5, #06b6d4); }
+    .btn.danger { color: var(--bad); }
+    .btn.good { color: var(--good); }
+    .btn.small { padding: 8px 10px; border-radius: 12px; font-size: 13px; }
+    .btn.ghost { background: transparent; box-shadow: none; }
+    .btn[disabled] { opacity: .55; cursor: not-allowed; transform: none; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(360px, 0.92fr) minmax(420px, 1.08fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .card {
+      border: 1px solid rgba(148, 163, 184, 0.26);
+      background: var(--panel);
+      backdrop-filter: blur(16px);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow2);
+      padding: 18px;
+      margin-bottom: 18px;
+      overflow: hidden;
+    }
+
+    .section-title { justify-content: space-between; margin-bottom: 14px; }
+    .section-title h2 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+    .section-title p { margin: 4px 0 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid rgba(148, 163, 184, 0.30);
+      background: rgba(255,255,255,0.55);
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    [data-theme="dark"] .badge { background: rgba(15,23,42,0.56); }
+    .badge.good { color: var(--good); border-color: rgba(5, 150, 105, .30); }
+    .badge.warn { color: var(--warn); border-color: rgba(217, 119, 6, .30); }
+    .badge.bad { color: var(--bad); border-color: rgba(220, 38, 38, .30); }
+
+    label { display: block; font-size: 12px; font-weight: 900; color: var(--muted); margin: 0 0 7px; text-transform: uppercase; letter-spacing: .06em; }
+    .field { margin-bottom: 13px; }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid rgba(148, 163, 184, 0.34);
+      background: rgba(255,255,255,0.72);
+      color: var(--text);
+      border-radius: 14px;
+      padding: 11px 12px;
+      outline: none;
+      transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+    }
+    [data-theme="dark"] input, [data-theme="dark"] select, [data-theme="dark"] textarea { background: rgba(15, 23, 42, 0.72); }
+    input:focus, select:focus, textarea:focus { border-color: rgba(79, 70, 229, .64); box-shadow: 0 0 0 4px rgba(79, 70, 229, .12); }
+    textarea { min-height: 112px; resize: vertical; line-height: 1.48; }
+    .mono { font-family: var(--mono); }
+    .mini { font-size: 12px; color: var(--muted); line-height: 1.45; }
+
+    .method-url {
+      display: grid;
+      grid-template-columns: 132px 1fr;
+      gap: 10px;
+    }
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .three { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .auth-grid { align-items: stretch; }
+    .auth-grid > * { flex: 1 1 180px; }
+
+    details {
+      border: 1px solid rgba(148, 163, 184, .24);
+      border-radius: 18px;
+      background: rgba(148, 163, 184, .06);
+      margin: 12px 0;
+      overflow: hidden;
+    }
+    summary {
+      padding: 12px 14px;
+      cursor: pointer;
+      font-weight: 900;
+      color: var(--text);
+      list-style: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    details .detail-body { padding: 0 14px 14px; }
+
+    .smart-box {
+      border: 1px solid rgba(79, 70, 229, .22);
+      background: linear-gradient(135deg, rgba(79,70,229,.10), rgba(6,182,212,.08));
+      border-radius: 20px;
+      padding: 14px;
+      margin-top: 10px;
+    }
+    .smart-box h3 { margin: 0 0 8px; font-size: 14px; }
+    .smart-list { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 10px; }
+    .token {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 9px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.66);
+      border: 1px solid rgba(148,163,184,.28);
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text);
+    }
+    [data-theme="dark"] .token { background: rgba(15,23,42,.62); }
+
+    .tabs { display: flex; background: rgba(148, 163, 184, .14); padding: 5px; border-radius: 16px; gap: 5px; }
+    .tab {
+      flex: 1;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      padding: 9px 10px;
+      border-radius: 12px;
+      font-weight: 900;
+    }
+    .tab.active { background: var(--panel-strong); color: var(--text); box-shadow: 0 8px 20px rgba(15,23,42,.08); }
+
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid rgba(148, 163, 184, .26);
+      border-radius: 18px;
+      background: rgba(255,255,255,.48);
+      max-height: 520px;
+    }
+    [data-theme="dark"] .table-wrap { background: rgba(15,23,42,.38); }
+    table { border-collapse: collapse; width: 100%; min-width: 760px; }
+    th, td {
+      border-bottom: 1px solid rgba(148, 163, 184, .20);
+      padding: 10px 11px;
+      text-align: left;
+      vertical-align: top;
+      font-size: 13px;
+    }
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: var(--panel-strong);
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      white-space: nowrap;
+    }
+    td { color: var(--text); }
+    tr:hover td { background: rgba(79, 70, 229, .045); }
+    .nowrap { white-space: nowrap; }
+    .truncate { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .status-ok { color: var(--good); font-weight: 900; }
+    .status-warn { color: var(--warn); font-weight: 900; }
+    .status-bad { color: var(--bad); font-weight: 900; }
+
+    .mapping-row {
+      display: grid;
+      grid-template-columns: minmax(120px, 0.8fr) minmax(180px, 1.2fr) 44px;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .progress {
+      height: 12px;
+      width: 100%;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, .22);
+      overflow: hidden;
+    }
+    .bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #4f46e5, #06b6d4);
+      border-radius: inherit;
+      transition: width .22s ease;
+    }
+
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 50;
+      display: grid;
+      gap: 8px;
+      width: min(420px, calc(100% - 36px));
+    }
+    .toast-item {
+      border: 1px solid rgba(148, 163, 184, .28);
+      background: var(--panel-strong);
+      color: var(--text);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 13px 14px;
+      animation: slideIn .2s ease both;
+      font-size: 14px;
+    }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      background: rgba(2, 6, 23, .58);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+    }
+    .modal-backdrop.show { display: flex; }
+    .modal {
+      width: min(980px, 100%);
+      max-height: 88vh;
+      overflow: auto;
+      border: 1px solid rgba(148, 163, 184, .30);
+      background: var(--panel-strong);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+    .modal pre {
+      overflow: auto;
+      padding: 14px;
+      border-radius: 18px;
+      border: 1px solid rgba(148,163,184,.24);
+      background: rgba(148, 163, 184, .10);
+      line-height: 1.5;
+    }
+
+    .empty {
+      border: 1px dashed rgba(148, 163, 184, .42);
+      border-radius: 18px;
+      padding: 18px;
+      color: var(--muted);
+      text-align: center;
+      background: rgba(148, 163, 184, .06);
+    }
+
+    .footer-note {
+      color: var(--muted);
+      text-align: center;
+      font-size: 13px;
+      line-height: 1.5;
+      margin-top: 20px;
+    }
+
+    .hide { display: none !important; }
+    .spacer { flex: 1 1 auto; }
+
+    @media (max-width: 1040px) {
+      .grid { grid-template-columns: 1fr; }
+      .method-url, .two, .three { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .app-shell { width: min(100% - 18px, 1500px); padding-top: 10px; }
+      .hero { padding: 18px; border-radius: 24px; }
+      .brand-lockup { align-items: flex-start; }
+      .logo { width: 46px; height: 46px; border-radius: 15px; }
+      .card { padding: 14px; border-radius: 20px; }
+      .mapping-row { grid-template-columns: 1fr; }
+      .mapping-row .btn { justify-content: center; }
+      .toolbar .btn, .result-actions .btn { flex: 1 1 auto; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <section class="hero">
+      <div class="hero-top">
+        <div class="brand-lockup">
+          <div class="logo">API</div>
+          <div>
+            <p class="eyebrow">Bulk API Runner</p>
+            <h1>Smart API Table Mapper</h1>
+          </div>
+        </div>
+        <div class="toolbar">
+          <button class="btn" id="themeBtn" type="button">🌙 Theme</button>
+          <button class="btn" id="loadDemoBtn" type="button">✨ Load Demo</button>
+          <button class="btn primary" id="runTopBtn" type="button">▶ Run Bulk</button>
+        </div>
+      </div>
+      <p class="hero-copy">
+        Build API requests with variables, paste a list of customer numbers or CSV rows, run the request in bulk, automatically discover useful JSON response fields, and export a clean table. Browser mode works for CORS-enabled APIs; Local Agent mode gives you Postman-like coverage for APIs that block browser calls.
+      </p>
+      <div class="pill-row">
+        <span class="pill">GET / POST / PUT / PATCH / DELETE</span>
+        <span class="pill">Smart {{variable}} detection</span>
+        <span class="pill">Auto JSON field mapping</span>
+        <span class="pill">Bulk CSV / TSV / JSON input</span>
+        <span class="pill">Export CSV / JSON</span>
+        <span class="pill">Local Agent for CORS-blocked APIs</span>
+      </div>
+    </section>
+
+    <main class="grid">
+      <div>
+        <section class="card">
+          <div class="section-title">
+            <div>
+              <h2>1. Request Builder</h2>
+              <p>Use variables like <span class="mono">{{customerNumber}}</span> in URL, headers, or body.</p>
+            </div>
+            <span class="badge" id="modeBadge">Browser mode</span>
+          </div>
+
+          <div class="field">
+            <label for="runMode">Run mode</label>
+            <select id="runMode">
+              <option value="demo">Demo / mock mode — no network, no CORS</option>
+              <option value="direct">Browser direct — works only with CORS-enabled APIs</option>
+              <option value="proxy">Proxy endpoint — send through your own backend/local agent</option>
+            </select>
+          </div>
+
+          <div class="field hide" id="proxyField">
+            <div class="two">
+              <div class="field">
+                <label for="proxyUrl">Proxy / Local Agent endpoint URL</label>
+                <input id="proxyUrl" class="mono" placeholder="http://127.0.0.1:8787/request" />
+              </div>
+              <div class="field">
+                <label for="proxyToken">Agent token</label>
+                <input id="proxyToken" class="mono" placeholder="Paste token printed by local-agent.js" autocomplete="off" />
+              </div>
+            </div>
+            <div class="toolbar">
+              <button class="btn small" id="fillLocalAgentBtn" type="button">⚙ Use Local Agent Defaults</button>
+              <button class="btn small good" id="testProxyBtn" type="button">✓ Test Agent</button>
+            </div>
+            <div class="smart-box" id="agentStatusBox" style="margin-top: 12px;">
+              <h3>Local Agent / Proxy Status</h3>
+              <div id="agentStatus" class="mini">Not tested yet. Run the included Node local agent, paste its token, then test the connection.</div>
+            </div>
+            <div class="mini" style="margin-top: 8px;">The included local agent accepts JSON fields: method, url, headers, body, timeoutMs. It adds CORS headers for this UI and forwards requests from your computer.</div>
+          </div>
+
+          <div class="method-url field">
+            <div>
+              <label for="method">Method</label>
+              <select id="method">
+                <option>GET</option>
+                <option selected>POST</option>
+                <option>PUT</option>
+                <option>PATCH</option>
+                <option>DELETE</option>
+              </select>
+            </div>
+            <div>
+              <label for="url">URL</label>
+              <input id="url" class="mono" placeholder="https://api.example.com/customers/{{customerNumber}}" />
+            </div>
+          </div>
+
+          <div class="two">
+            <div class="field">
+              <label for="authType">Auth helper</label>
+              <select id="authType">
+                <option value="none">None / manual headers</option>
+                <option value="bearer">Bearer token</option>
+                <option value="apiKeyHeader">API key header</option>
+                <option value="basic">Basic auth</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="contentType">Body content type</label>
+              <select id="contentType">
+                <option value="application/json">application/json</option>
+                <option value="text/plain">text/plain</option>
+                <option value="application/x-www-form-urlencoded">x-www-form-urlencoded</option>
+                <option value="none">No content-type header</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="authFields" class="auth-grid"></div>
+
+          <details open>
+            <summary>Headers</summary>
+            <div class="detail-body">
+              <textarea id="headers" class="mono" spellcheck="false" placeholder='Authorization: Bearer {{token}}&#10;X-Customer: {{customerNumber}}'></textarea>
+              <div class="mini">Use either <span class="mono">Key: Value</span> lines or a JSON object.</div>
+            </div>
+          </details>
+
+          <details open>
+            <summary>Request body</summary>
+            <div class="detail-body">
+              <textarea id="body" class="mono" spellcheck="false" placeholder='{&#10;  "customerNumber": "{{customerNumber}}"&#10;}'></textarea>
+              <div class="mini">GET/DELETE can still use a body if your API supports it, but many APIs ignore it.</div>
+            </div>
+          </details>
+
+          <div class="smart-box">
+            <h3>Smart variable detector</h3>
+            <div id="variableSummary" class="mini">No variables detected yet.</div>
+            <div id="variableTokens" class="smart-list"></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="section-title">
+            <div>
+              <h2>2. Bulk Input</h2>
+              <p>Paste one value per line, CSV/TSV with headers, or a JSON array.</p>
+            </div>
+            <span class="badge" id="rowCountBadge">0 rows</span>
+          </div>
+
+          <div class="tabs" role="tablist" aria-label="Bulk input helpers">
+            <button class="tab active" type="button" data-sample="single">Single column</button>
+            <button class="tab" type="button" data-sample="csv">CSV</button>
+            <button class="tab" type="button" data-sample="json">JSON</button>
+          </div>
+
+          <div class="field" style="margin-top: 12px;">
+            <label for="bulkInput">Bulk values</label>
+            <textarea id="bulkInput" class="mono" spellcheck="false" placeholder="10001&#10;10002&#10;10003"></textarea>
+          </div>
+
+          <div class="two">
+            <div class="field">
+              <label for="firstRowMode">Header detection</label>
+              <select id="firstRowMode">
+                <option value="auto" selected>Auto-detect headers</option>
+                <option value="yes">First row has headers</option>
+                <option value="no">No header row</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="singleColumnVar">Single-column variable</label>
+              <select id="singleColumnVar"></select>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <button class="btn" id="parseBtn" type="button">🔍 Parse & Match</button>
+            <button class="btn" id="sampleRowsBtn" type="button">🧪 Add Sample Rows</button>
+            <button class="btn ghost" id="clearRowsBtn" type="button">Clear</button>
+          </div>
+
+          <div id="inputPreview" style="margin-top: 14px;"></div>
+        </section>
+
+        <section class="card">
+          <div class="section-title">
+            <div>
+              <h2>3. Run Settings</h2>
+              <p>Control speed, retries, and timeouts to avoid overwhelming an API.</p>
+            </div>
+          </div>
+          <div class="three">
+            <div class="field">
+              <label for="concurrency">Concurrency</label>
+              <input id="concurrency" type="number" min="1" max="20" value="3" />
+            </div>
+            <div class="field">
+              <label for="delayMs">Delay ms</label>
+              <input id="delayMs" type="number" min="0" value="150" />
+            </div>
+            <div class="field">
+              <label for="timeoutMs">Timeout ms</label>
+              <input id="timeoutMs" type="number" min="1000" value="30000" />
+            </div>
+          </div>
+          <div class="two">
+            <div class="field">
+              <label for="retries">Retries</label>
+              <input id="retries" type="number" min="0" max="5" value="1" />
+            </div>
+            <div class="field">
+              <label for="saveRaw">Raw response</label>
+              <select id="saveRaw">
+                <option value="yes" selected>Keep raw JSON/text per row</option>
+                <option value="no">Do not keep raw response</option>
+              </select>
+            </div>
+          </div>
+          <div class="toolbar">
+            <button class="btn primary" id="runBtn" type="button">▶ Run Bulk Requests</button>
+            <button class="btn" id="testBtn" type="button">⚡ Test First Row</button>
+            <button class="btn danger" id="stopBtn" type="button" disabled>■ Stop</button>
+          </div>
+        </section>
+      </div>
+
+      <div>
+        <section class="card">
+          <div class="section-title">
+            <div>
+              <h2>4. Smart Response Mapping</h2>
+              <p>Run a test request or use demo mode, then auto-discover useful fields.</p>
+            </div>
+            <span class="badge" id="mappingBadge">0 fields</span>
+          </div>
+
+          <div class="mapping-actions">
+            <button class="btn" id="autoMapBtn" type="button">✨ Auto-map from Sample</button>
+            <button class="btn" id="addMapBtn" type="button">+ Add Field</button>
+            <button class="btn ghost" id="clearMapBtn" type="button">Clear Mapping</button>
+          </div>
+
+          <div id="mappingList" style="margin-top: 14px;"></div>
+
+          <details>
+            <summary>Sample response / discovered paths</summary>
+            <div class="detail-body">
+              <div id="pathSuggestions" class="smart-list"></div>
+              <pre id="sampleResponse" class="mono">No sample response yet. Click “Test First Row” or use Demo mode.</pre>
+            </div>
+          </details>
+        </section>
+
+        <section class="card">
+          <div class="section-title">
+            <div>
+              <h2>5. Results</h2>
+              <p>Mapped fields appear as table columns. Click a row to inspect raw response.</p>
+            </div>
+            <span class="badge" id="resultBadge">Idle</span>
+          </div>
+
+          <div class="progress" aria-label="Run progress"><div class="bar" id="progressBar"></div></div>
+          <div class="status-line" style="margin: 12px 0;">
+            <span class="badge" id="doneBadge">0 done</span>
+            <span class="badge good" id="successBadge">0 success</span>
+            <span class="badge bad" id="failBadge">0 failed</span>
+            <span class="badge" id="avgBadge">0 ms avg</span>
+          </div>
+
+          <div class="result-actions">
+            <button class="btn" id="exportCsvBtn" type="button">⬇ Export CSV</button>
+            <button class="btn" id="exportJsonBtn" type="button">⬇ Export JSON</button>
+            <button class="btn" id="copyCsvBtn" type="button">📋 Copy CSV</button>
+            <button class="btn ghost" id="clearResultsBtn" type="button">Clear Results</button>
+          </div>
+
+          <div id="resultsTable" style="margin-top: 14px;">
+            <div class="empty">Run requests to see results here.</div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="section-title">
+            <div>
+              <h2>Saved Templates</h2>
+              <p>Templates are saved locally in this browser only.</p>
+            </div>
+          </div>
+          <div class="template-row">
+            <select id="templateSelect" style="flex: 1 1 220px;"></select>
+            <button class="btn" id="saveTemplateBtn" type="button">💾 Save</button>
+            <button class="btn" id="loadTemplateBtn" type="button">Load</button>
+            <button class="btn danger" id="deleteTemplateBtn" type="button">Delete</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="section-title">
+            <div>
+              <h2>CORS / Privacy Notes</h2>
+            </div>
+          </div>
+          <p class="mini">
+            Browser direct mode cannot bypass CORS. If an API blocks browser requests, use Local Agent / Proxy mode. API keys entered here stay in your browser until you run a request; in Local Agent mode they are sent only to the local agent on your computer and then forwarded to the target API.
+          </p>
+          <details style="margin-top: 12px;">
+            <summary>How to run the included local agent</summary>
+            <div class="detail-body">
+              <pre class="mono" style="white-space: pre-wrap;">cd local-agent
+node local-agent.js</pre>
+              <p class="mini">The terminal prints a token. Paste that token into the Agent token field above. Default endpoint: <span class="mono">http://127.0.0.1:8787/request</span>.</p>
+            </div>
+          </details>
+        </section>
+      </div>
+    </main>
+
+    <p class="footer-note">Built as a zero-dependency standalone HTML/CSS/JavaScript app. Upload this file as <span class="mono">index.html</span> to your ReaderNook Lab app folder.</p>
+  </div>
+
+  <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true" aria-label="Row details">
+    <div class="modal">
+      <div class="section-title">
+        <div>
+          <h2>Row Details</h2>
+          <p id="modalSubtitle">Raw response and mapped data.</p>
+        </div>
+        <button class="btn" id="closeModalBtn" type="button">Close</button>
+      </div>
+      <pre id="modalContent" class="mono"></pre>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const $ = (id) => document.getElementById(id);
+      const state = {
+        variables: [],
+        rows: [],
+        rowColumns: [],
+        mappings: [],
+        results: [],
+        sampleJson: null,
+        discoveredPaths: [],
+        running: false,
+        aborters: [],
+        runStartedAt: 0
+      };
+
+      const storageKeys = {
+        settings: 'apiBulkRunner.settings.v1',
+        templates: 'apiBulkRunner.templates.v1'
+      };
+
+      const controls = [
+        'runMode', 'proxyUrl', 'proxyToken', 'method', 'url', 'authType', 'contentType', 'headers', 'body',
+        'bulkInput', 'firstRowMode', 'singleColumnVar', 'concurrency', 'delayMs', 'timeoutMs', 'retries', 'saveRaw'
+      ];
+
+      function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>'"]/g, (ch) => ({
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+        }[ch]));
+      }
+
+      function toast(message, type = 'info') {
+        const item = document.createElement('div');
+        item.className = 'toast-item';
+        item.textContent = message;
+        if (type === 'bad') item.style.borderColor = 'rgba(220,38,38,.45)';
+        if (type === 'good') item.style.borderColor = 'rgba(5,150,105,.45)';
+        $('toast').appendChild(item);
+        setTimeout(() => item.remove(), 3600);
+      }
+
+      function debounce(fn, wait = 250) {
+        let t;
+        return (...args) => {
+          clearTimeout(t);
+          t = setTimeout(() => fn(...args), wait);
+        };
+      }
+
+      function normalizeName(value) {
+        return String(value ?? '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+      }
+
+      function titleFromPath(path) {
+        const clean = String(path || '').replace(/^\$\.?/, '').replace(/\[0\]/g, '').split('.').pop() || path;
+        return clean
+          .replace(/[_-]+/g, ' ')
+          .replace(/([a-z])([A-Z])/g, '$1 $2')
+          .replace(/\b\w/g, ch => ch.toUpperCase());
+      }
+
+      function unique(items) {
+        return [...new Set(items.filter(Boolean))];
+      }
+
+      function readForm() {
+        const cfg = {};
+        controls.forEach(id => cfg[id] = $(id)?.value ?? '');
+        cfg.mappings = state.mappings;
+        return cfg;
+      }
+
+      function writeForm(cfg = {}) {
+        controls.forEach(id => {
+          if ($(id) && Object.prototype.hasOwnProperty.call(cfg, id)) $(id).value = cfg[id];
+        });
+        if (Array.isArray(cfg.mappings)) state.mappings = cfg.mappings;
+        updateAuthFields();
+        detectVariables();
+        parseBulkInput(false);
+        renderMappings();
+        updateModeUI();
+      }
+
+      function saveSettings() {
+        const cfg = readForm();
+        cfg.theme = document.documentElement.getAttribute('data-theme') || 'light';
+        localStorage.setItem(storageKeys.settings, JSON.stringify(cfg));
+      }
+
+      function loadSettings() {
+        try {
+          const raw = localStorage.getItem(storageKeys.settings);
+          if (!raw) return false;
+          const cfg = JSON.parse(raw);
+          if (cfg.theme) document.documentElement.setAttribute('data-theme', cfg.theme);
+          writeForm(cfg);
+          return true;
+        } catch (err) {
+          console.warn(err);
+          return false;
+        }
+      }
+
+      function getTemplates() {
+        try { return JSON.parse(localStorage.getItem(storageKeys.templates) || '{}'); }
+        catch { return {}; }
+      }
+
+      function setTemplates(templates) {
+        localStorage.setItem(storageKeys.templates, JSON.stringify(templates));
+        renderTemplateSelect();
+      }
+
+      function renderTemplateSelect() {
+        const templates = getTemplates();
+        const names = Object.keys(templates).sort((a, b) => a.localeCompare(b));
+        $('templateSelect').innerHTML = names.length
+          ? names.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('')
+          : '<option value="">No saved templates yet</option>';
+      }
+
+      function updateAuthFields() {
+        const type = $('authType').value;
+        let html = '';
+        if (type === 'bearer') {
+          html = `<div class="field"><label for="bearerToken">Bearer token</label><input id="bearerToken" class="mono" placeholder="Token or {{token}}" /></div>`;
+        } else if (type === 'apiKeyHeader') {
+          html = `
+            <div class="field"><label for="apiKeyName">Header name</label><input id="apiKeyName" class="mono" value="x-api-key" /></div>
+            <div class="field"><label for="apiKeyValue">API key</label><input id="apiKeyValue" class="mono" placeholder="Key or {{apiKey}}" /></div>`;
+        } else if (type === 'basic') {
+          html = `
+            <div class="field"><label for="basicUser">Username</label><input id="basicUser" class="mono" placeholder="Username or {{username}}" /></div>
+            <div class="field"><label for="basicPass">Password</label><input id="basicPass" class="mono" type="password" placeholder="Password or {{password}}" /></div>`;
+        }
+        $('authFields').innerHTML = html;
+        ['bearerToken', 'apiKeyName', 'apiKeyValue', 'basicUser', 'basicPass'].forEach(id => {
+          const el = $(id);
+          if (el) el.addEventListener('input', () => { detectVariables(); saveSettingsDebounced(); });
+        });
+      }
+
+      function getAuthDynamicValues() {
+        return ['bearerToken', 'apiKeyName', 'apiKeyValue', 'basicUser', 'basicPass']
+          .map(id => $(id)?.value || '')
+          .join('\n');
+      }
+
+      function detectVariables() {
+        const text = [$('url').value, $('headers').value, $('body').value, getAuthDynamicValues()].join('\n');
+        const regex = /{{\s*([a-zA-Z0-9_.-]+)\s*}}/g;
+        const vars = [];
+        let match;
+        while ((match = regex.exec(text))) vars.push(match[1]);
+        state.variables = unique(vars);
+        renderVariables();
+        renderSingleColumnVarOptions();
+      }
+
+      function renderVariables() {
+        const vars = state.variables;
+        $('variableSummary').textContent = vars.length
+          ? `${vars.length} variable${vars.length === 1 ? '' : 's'} detected. Bulk input will be matched automatically where possible.`
+          : 'No variables detected yet. Add {{customerNumber}} or another variable in your URL/body/header.';
+        $('variableTokens').innerHTML = vars.map(v => `<span class="token">{{${escapeHtml(v)}}}</span>`).join('');
+      }
+
+      function renderSingleColumnVarOptions() {
+        const current = $('singleColumnVar').value;
+        const vars = state.variables.length ? state.variables : ['value'];
+        $('singleColumnVar').innerHTML = vars.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+        if (vars.includes(current)) $('singleColumnVar').value = current;
+      }
+
+      function updateModeUI() {
+        const mode = $('runMode').value;
+        $('proxyField').classList.toggle('hide', mode !== 'proxy');
+        $('modeBadge').textContent = mode === 'demo' ? 'Demo mode' : mode === 'proxy' ? 'Local Agent / Proxy mode' : 'Browser mode';
+        $('modeBadge').className = 'badge ' + (mode === 'direct' ? 'warn' : mode === 'proxy' ? 'good' : '');
+      }
+
+      function localAgentHeaders() {
+        const headers = { 'Content-Type': 'application/json' };
+        const token = $('proxyToken')?.value?.trim();
+        if (token) headers['X-Local-Agent-Token'] = token;
+        return headers;
+      }
+
+      function healthUrlFromProxyUrl(raw) {
+        const fallback = 'http://127.0.0.1:8787/request';
+        const value = String(raw || fallback).trim();
+        const url = new URL(value);
+        if (!url.pathname || url.pathname === '/') url.pathname = '/health';
+        else if (url.pathname.endsWith('/request')) url.pathname = url.pathname.replace(/\/request$/, '/health');
+        else if (url.pathname.endsWith('/')) url.pathname += 'health';
+        else url.pathname += '/health';
+        return url.toString();
+      }
+
+      function fillLocalAgentDefaults() {
+        $('runMode').value = 'proxy';
+        $('proxyUrl').value = 'http://127.0.0.1:8787/request';
+        updateModeUI();
+        saveSettings();
+        toast('Local Agent defaults filled. Paste the token from your terminal, then click Test Agent.', 'good');
+      }
+
+      async function testProxyConnection() {
+        const statusEl = $('agentStatus');
+        try {
+          if (!$('proxyUrl').value.trim()) fillLocalAgentDefaults();
+          statusEl.textContent = 'Testing connection...';
+          const healthUrl = healthUrlFromProxyUrl($('proxyUrl').value);
+          const res = await fetch(healthUrl, { method: 'GET', headers: localAgentHeaders() });
+          const text = await res.text();
+          let data;
+          try { data = JSON.parse(text); } catch { data = { raw: text }; }
+          if (!res.ok) throw new Error(data.error || data.message || `HTTP ${res.status}`);
+          statusEl.innerHTML = `Connected to <span class="mono">${escapeHtml(data.name || 'local agent')}</span>. Version: <span class="mono">${escapeHtml(data.version || 'unknown')}</span>. Started: <span class="mono">${escapeHtml(data.startedAt || '')}</span>.`;
+          toast('Local agent connection successful.', 'good');
+        } catch (err) {
+          statusEl.innerHTML = `Could not connect: <span class="mono">${escapeHtml(err.message)}</span>. Make sure <span class="mono">node local-agent.js</span> is running and the token is correct.`;
+          toast('Local agent test failed.', 'bad');
+        }
+      }
+
+      function splitCsvLine(line, delimiter) {
+        const out = [];
+        let cur = '';
+        let quote = false;
+        for (let i = 0; i < line.length; i++) {
+          const ch = line[i];
+          const next = line[i + 1];
+          if (ch === '"' && quote && next === '"') { cur += '"'; i++; continue; }
+          if (ch === '"') { quote = !quote; continue; }
+          if (ch === delimiter && !quote) { out.push(cur); cur = ''; continue; }
+          cur += ch;
+        }
+        out.push(cur);
+        return out.map(v => v.trim());
+      }
+
+      function detectDelimiter(text) {
+        const sample = text.split(/\r?\n/).find(line => line.trim()) || '';
+        const candidates = ['\t', ',', ';', '|'];
+        let best = ',';
+        let bestCount = 0;
+        candidates.forEach(d => {
+          const count = splitCsvLine(sample, d).length;
+          if (count > bestCount) { bestCount = count; best = d; }
+        });
+        return bestCount > 1 ? best : null;
+      }
+
+      function looksLikeHeader(cells) {
+        if (!cells.length) return false;
+        const normVars = state.variables.map(normalizeName);
+        let headerScore = 0;
+        cells.forEach(cell => {
+          const n = normalizeName(cell);
+          if (!n) return;
+          if (normVars.includes(n)) headerScore += 3;
+          if (/^[a-z_][a-z0-9_ -]*$/i.test(cell) && !/^\d+(\.\d+)?$/.test(cell)) headerScore += 1;
+        });
+        return headerScore >= Math.max(1, Math.ceil(cells.length * 0.65));
+      }
+
+      function parseJsonRows(text) {
+        const parsed = JSON.parse(text);
+        if (!Array.isArray(parsed)) throw new Error('JSON input must be an array.');
+        return parsed.map(item => typeof item === 'object' && item !== null ? item : { value: item });
+      }
+
+      function parseBulkInput(showToast = true) {
+        const text = $('bulkInput').value.trim();
+        if (!text) {
+          state.rows = [];
+          state.rowColumns = [];
+          renderInputPreview();
+          return;
+        }
+
+        try {
+          let rows = [];
+          if (text.startsWith('[')) {
+            rows = parseJsonRows(text);
+          } else {
+            const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+            const delimiter = detectDelimiter(text);
+            if (!delimiter) {
+              const varName = $('singleColumnVar').value || state.variables[0] || 'value';
+              rows = lines.map(line => ({ [varName]: line }));
+            } else {
+              const matrix = lines.map(line => splitCsvLine(line, delimiter));
+              let headers = [];
+              const headerMode = $('firstRowMode').value;
+              const firstIsHeader = headerMode === 'yes' || (headerMode === 'auto' && looksLikeHeader(matrix[0] || []));
+              if (firstIsHeader) {
+                headers = matrix.shift().map((h, idx) => h || `column${idx + 1}`);
+              } else {
+                headers = inferHeaders(matrix[0]?.length || 0);
+              }
+              rows = matrix.map(cells => {
+                const obj = {};
+                headers.forEach((h, idx) => obj[h] = cells[idx] ?? '');
+                return obj;
+              });
+            }
+          }
+
+          state.rows = rows;
+          state.rowColumns = unique(rows.flatMap(row => Object.keys(row)));
+          smartColumnMatch();
+          renderInputPreview();
+          if (showToast) toast(`Parsed ${rows.length} row${rows.length === 1 ? '' : 's'}.`, 'good');
+        } catch (err) {
+          toast(err.message || 'Could not parse bulk input.', 'bad');
+        }
+      }
+
+      function inferHeaders(count) {
+        const vars = state.variables;
+        if (count === 1) return [$('singleColumnVar').value || vars[0] || 'value'];
+        if (vars.length === count) return vars;
+        return Array.from({ length: count }, (_, i) => vars[i] || `column${i + 1}`);
+      }
+
+      function smartColumnMatch() {
+        if (!state.rows.length || !state.variables.length) return;
+        const cols = state.rowColumns;
+        const missing = state.variables.filter(v => !cols.some(c => normalizeName(c) === normalizeName(v)));
+        if (missing.length === 1 && cols.length === 1) {
+          const oldCol = cols[0];
+          const newCol = missing[0];
+          state.rows = state.rows.map(row => ({ [newCol]: row[oldCol] }));
+          state.rowColumns = [newCol];
+        }
+      }
+
+      function renderInputPreview() {
+        $('rowCountBadge').textContent = `${state.rows.length} row${state.rows.length === 1 ? '' : 's'}`;
+        if (!state.rows.length) {
+          $('inputPreview').innerHTML = '<div class="empty">No rows parsed yet.</div>';
+          return;
+        }
+        const rows = state.rows.slice(0, 6);
+        const cols = state.rowColumns;
+        const missing = state.variables.filter(v => !cols.some(c => normalizeName(c) === normalizeName(v)));
+        const missingHtml = missing.length
+          ? `<div class="smart-box" style="margin-bottom:12px;"><strong>Missing variables:</strong> ${missing.map(v => `<span class="token">{{${escapeHtml(v)}}}</span>`).join(' ')} <div class="mini" style="margin-top:6px;">Add matching columns, use single-column input, or rename your placeholder.</div></div>`
+          : '';
+        const table = `
+          <div class="table-wrap" style="max-height:260px;">
+            <table>
+              <thead><tr>${cols.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead>
+              <tbody>${rows.map(row => `<tr>${cols.map(c => `<td>${escapeHtml(row[c])}</td>`).join('')}</tr>`).join('')}</tbody>
+            </table>
+          </div>
+          <div class="mini" style="margin-top:8px;">Showing ${rows.length} of ${state.rows.length} parsed rows.</div>`;
+        $('inputPreview').innerHTML = missingHtml + table;
+      }
+
+      function parseHeaders(text, row) {
+        const replaced = replaceVars(text || '', row);
+        const headers = {};
+        if (!replaced.trim()) return headers;
+        try {
+          const obj = JSON.parse(replaced);
+          Object.entries(obj || {}).forEach(([k, v]) => { if (k) headers[k] = String(v); });
+          return headers;
+        } catch {
+          replaced.split(/\r?\n/).forEach(line => {
+            const trimmed = line.trim();
+            if (!trimmed || trimmed.startsWith('#')) return;
+            const idx = trimmed.indexOf(':');
+            if (idx > -1) {
+              const key = trimmed.slice(0, idx).trim();
+              const val = trimmed.slice(idx + 1).trim();
+              if (key) headers[key] = val;
+            }
+          });
+          return headers;
+        }
+      }
+
+      function addAuthHeaders(headers, row) {
+        const type = $('authType').value;
+        if (type === 'bearer') {
+          const token = replaceVars($('bearerToken')?.value || '', row).trim();
+          if (token) headers.Authorization = `Bearer ${token}`;
+        } else if (type === 'apiKeyHeader') {
+          const name = replaceVars($('apiKeyName')?.value || 'x-api-key', row).trim();
+          const value = replaceVars($('apiKeyValue')?.value || '', row).trim();
+          if (name && value) headers[name] = value;
+        } else if (type === 'basic') {
+          const user = replaceVars($('basicUser')?.value || '', row);
+          const pass = replaceVars($('basicPass')?.value || '', row);
+          if (user || pass) headers.Authorization = `Basic ${btoa(`${user}:${pass}`)}`;
+        }
+        const contentType = $('contentType').value;
+        if (contentType !== 'none' && !Object.keys(headers).some(h => h.toLowerCase() === 'content-type')) {
+          headers['Content-Type'] = contentType;
+        }
+        return headers;
+      }
+
+      function replaceVars(text, row) {
+        return String(text ?? '').replace(/{{\s*([a-zA-Z0-9_.-]+)\s*}}/g, (_, key) => {
+          const exact = row[key];
+          if (exact !== undefined) return String(exact);
+          const match = Object.keys(row).find(k => normalizeName(k) === normalizeName(key));
+          return match ? String(row[match]) : '';
+        });
+      }
+
+      function buildRequest(row) {
+        const method = $('method').value;
+        const url = replaceVars($('url').value.trim(), row);
+        const headers = addAuthHeaders(parseHeaders($('headers').value, row), row);
+        const rawBody = replaceVars($('body').value, row);
+        const hasBody = rawBody.trim() && !['GET', 'HEAD'].includes(method);
+        return { method, url, headers, body: hasBody ? rawBody : undefined, timeoutMs: Number($('timeoutMs').value) || 30000 };
+      }
+
+      function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+      }
+
+      async function fetchWithTimeout(request) {
+        const controller = new AbortController();
+        state.aborters.push(controller);
+        const t = setTimeout(() => controller.abort(), request.timeoutMs || 30000);
+        try {
+          const res = await fetch(request.url, {
+            method: request.method,
+            headers: request.headers,
+            body: request.body,
+            signal: controller.signal
+          });
+          const text = await res.text();
+          return parseFetchResponse(res.status, res.statusText, text, res.headers);
+        } finally {
+          clearTimeout(t);
+          state.aborters = state.aborters.filter(c => c !== controller);
+        }
+      }
+
+      async function proxyFetch(request) {
+        const proxyUrl = $('proxyUrl').value.trim();
+        if (!proxyUrl) throw new Error('Proxy endpoint URL is required for proxy/local-agent mode.');
+        const controller = new AbortController();
+        state.aborters.push(controller);
+        const t = setTimeout(() => controller.abort(), request.timeoutMs || 30000);
+        try {
+          const res = await fetch(proxyUrl, {
+            method: 'POST',
+            headers: localAgentHeaders(),
+            body: JSON.stringify(request),
+            signal: controller.signal
+          });
+          const text = await res.text();
+          let payload;
+          try { payload = JSON.parse(text); } catch { payload = { status: res.status, statusText: res.statusText, body: text }; }
+          if (!res.ok && payload.error) throw new Error(payload.error);
+          const status = Number(payload.status || res.status);
+          const body = payload.body !== undefined ? (typeof payload.body === 'string' ? payload.body : JSON.stringify(payload.body)) : text;
+          return parseFetchResponse(status, payload.statusText || res.statusText, body, null);
+        } finally {
+          clearTimeout(t);
+          state.aborters = state.aborters.filter(c => c !== controller);
+        }
+      }
+
+      function parseFetchResponse(status, statusText, text) {
+        let json = null;
+        let parseError = '';
+        try { json = text ? JSON.parse(text) : null; } catch (err) { parseError = err.message; }
+        return { status, statusText, text, json, parseError };
+      }
+
+      async function demoFetch(request, row, index) {
+        await sleep(220 + Math.random() * 280);
+        const primaryKey = state.variables[0] || Object.keys(row)[0] || 'customerNumber';
+        const rawValue = row[primaryKey] ?? Object.values(row)[0] ?? `${10000 + index}`;
+        const num = Number(String(rawValue).replace(/\D/g, '').slice(-4)) || index + 1;
+        if (String(rawValue).toLowerCase().includes('fail') || String(rawValue).endsWith('404')) {
+          return {
+            status: 404,
+            statusText: 'Not Found',
+            text: JSON.stringify({ error: { code: 'CUSTOMER_NOT_FOUND', message: `No customer found for ${rawValue}` } }, null, 2),
+            json: { error: { code: 'CUSTOMER_NOT_FOUND', message: `No customer found for ${rawValue}` } }
+          };
+        }
+        const names = ['Aarav Mehta', 'Maya Patel', 'Noah Wilson', 'Emma Brown', 'Liam Chen', 'Olivia Singh', 'Sophia Martin'];
+        const segments = ['Gold', 'Silver', 'Bronze', 'Premium', 'Standard'];
+        const json = {
+          request: { [primaryKey]: rawValue, receivedAt: new Date().toISOString() },
+          customer: {
+            customerNumber: rawValue,
+            name: names[num % names.length],
+            status: num % 5 === 0 ? 'Review' : 'Active',
+            segment: segments[num % segments.length],
+            balance: Number((num * 7.33 % 1800).toFixed(2)),
+            email: `customer${String(rawValue).replace(/\W/g, '').toLowerCase()}@example.com`,
+            phone: `+1-613-555-${String(num).padStart(4, '0').slice(-4)}`,
+            riskScore: Number(((num % 100) / 100).toFixed(2))
+          },
+          meta: {
+            source: 'demo-mode',
+            processingMs: Math.round(140 + Math.random() * 250),
+            traceId: `trace_${Math.random().toString(36).slice(2, 10)}`
+          }
+        };
+        return { status: 200, statusText: 'OK', text: JSON.stringify(json, null, 2), json };
+      }
+
+      async function sendRequest(row, index) {
+        const request = buildRequest(row);
+        const started = performance.now();
+        const mode = $('runMode').value;
+        let response;
+        if (mode === 'demo') response = await demoFetch(request, row, index);
+        else if (mode === 'proxy') response = await proxyFetch(request);
+        else response = await fetchWithTimeout(request);
+        const durationMs = Math.round(performance.now() - started);
+        return { request, response, durationMs };
+      }
+
+      async function sendWithRetries(row, index) {
+        const retries = Number($('retries').value) || 0;
+        let lastErr;
+        for (let attempt = 0; attempt <= retries; attempt++) {
+          try {
+            const out = await sendRequest(row, index);
+            if (out.response.status >= 500 && attempt < retries) throw new Error(`HTTP ${out.response.status}`);
+            return { ...out, attempts: attempt + 1 };
+          } catch (err) {
+            lastErr = err;
+            if (attempt < retries) await sleep(300 * (attempt + 1));
+          }
+        }
+        throw lastErr;
+      }
+
+      function flattenJson(value, prefix = '$', out = []) {
+        if (value === null || value === undefined) {
+          out.push({ path: prefix, value });
+          return out;
+        }
+        if (Array.isArray(value)) {
+          if (!value.length) {
+            out.push({ path: prefix, value: [] });
+          } else {
+            flattenJson(value[0], `${prefix}[0]`, out);
+          }
+          return out;
+        }
+        if (typeof value === 'object') {
+          const entries = Object.entries(value);
+          if (!entries.length) out.push({ path: prefix, value: {} });
+          entries.forEach(([k, v]) => flattenJson(v, `${prefix}.${k}`, out));
+          return out;
+        }
+        out.push({ path: prefix, value });
+        return out;
+      }
+
+      function discoverPaths(json) {
+        const paths = flattenJson(json).filter(item => {
+          const type = typeof item.value;
+          return ['string', 'number', 'boolean'].includes(type) || item.value === null;
+        });
+        return paths.slice(0, 200);
+      }
+
+      function scorePath(item) {
+        const p = item.path.toLowerCase();
+        let score = 0;
+        ['customer', 'name', 'status', 'email', 'segment', 'balance', 'amount', 'score', 'phone', 'id', 'number', 'code', 'message'].forEach((term, idx) => {
+          if (p.includes(term)) score += 20 - idx;
+        });
+        if (p.includes('meta') || p.includes('request') || p.includes('trace')) score -= 10;
+        if (String(item.value).length > 80) score -= 10;
+        score -= Math.max(0, item.path.length - 40) / 10;
+        return score;
+      }
+
+      function autoMapFromJson(json, quiet = false) {
+        if (!json) {
+          if (!quiet) toast('No sample JSON response available yet.', 'bad');
+          return;
+        }
+        state.sampleJson = json;
+        state.discoveredPaths = discoverPaths(json);
+        const selected = [...state.discoveredPaths]
+          .sort((a, b) => scorePath(b) - scorePath(a))
+          .slice(0, 10)
+          .filter(item => scorePath(item) > -5);
+        state.mappings = selected.map(item => ({ column: titleFromPath(item.path), path: item.path }));
+        renderMappings();
+        renderSampleResponse();
+        if (!quiet) toast(`Auto-mapped ${state.mappings.length} response field${state.mappings.length === 1 ? '' : 's'}.`, 'good');
+      }
+
+      function renderSampleResponse() {
+        $('sampleResponse').textContent = state.sampleJson ? JSON.stringify(state.sampleJson, null, 2) : 'No sample response yet. Click “Test First Row” or use Demo mode.';
+        $('pathSuggestions').innerHTML = state.discoveredPaths.slice(0, 35).map(item =>
+          `<button class="token" type="button" data-path="${escapeHtml(item.path)}" title="Click to add mapping">${escapeHtml(item.path)}</button>`
+        ).join('') || '<span class="mini">No paths discovered yet.</span>';
+        document.querySelectorAll('[data-path]').forEach(btn => btn.addEventListener('click', () => {
+          addMapping(titleFromPath(btn.dataset.path), btn.dataset.path);
+        }));
+      }
+
+      function addMapping(column = '', path = '') {
+        state.mappings.push({ column, path });
+        renderMappings();
+      }
+
+      function renderMappings() {
+        $('mappingBadge').textContent = `${state.mappings.length} field${state.mappings.length === 1 ? '' : 's'}`;
+        if (!state.mappings.length) {
+          $('mappingList').innerHTML = '<div class="empty">No mapping yet. Use “Auto-map from Sample” or add fields manually.</div>';
+          return;
+        }
+        $('mappingList').innerHTML = state.mappings.map((m, idx) => `
+          <div class="mapping-row">
+            <input data-map-col="${idx}" value="${escapeHtml(m.column)}" placeholder="Column name" />
+            <input data-map-path="${idx}" class="mono" value="${escapeHtml(m.path)}" placeholder="$.customer.name" />
+            <button class="btn small danger" type="button" data-map-del="${idx}" title="Remove">×</button>
+          </div>
+        `).join('');
+        document.querySelectorAll('[data-map-col]').forEach(input => input.addEventListener('input', () => {
+          state.mappings[Number(input.dataset.mapCol)].column = input.value;
+          saveSettingsDebounced();
+        }));
+        document.querySelectorAll('[data-map-path]').forEach(input => input.addEventListener('input', () => {
+          state.mappings[Number(input.dataset.mapPath)].path = input.value;
+          saveSettingsDebounced();
+        }));
+        document.querySelectorAll('[data-map-del]').forEach(btn => btn.addEventListener('click', () => {
+          state.mappings.splice(Number(btn.dataset.mapDel), 1);
+          renderMappings();
+          saveSettingsDebounced();
+        }));
+      }
+
+      function getPath(obj, path) {
+        if (!path) return '';
+        const clean = String(path).replace(/^\$\.?/, '');
+        if (!clean) return obj;
+        const parts = [];
+        clean.replace(/([^.[\]]+)|\[(\d+)\]/g, (_, key, idx) => {
+          parts.push(key !== undefined ? key : Number(idx));
+        });
+        let cur = obj;
+        for (const part of parts) {
+          if (cur === null || cur === undefined) return '';
+          cur = cur[part];
+        }
+        if (cur === null || cur === undefined) return '';
+        if (typeof cur === 'object') return JSON.stringify(cur);
+        return cur;
+      }
+
+      function resultToRow(result) {
+        const base = { ...result.input };
+        base['HTTP Status'] = result.status || '';
+        base['Duration ms'] = result.durationMs || '';
+        base['Attempts'] = result.attempts || '';
+        state.mappings.forEach(m => {
+          const name = m.column || m.path;
+          base[name] = result.json ? getPath(result.json, m.path) : '';
+        });
+        base['Error'] = result.error || (result.status >= 400 ? result.statusText : '') || '';
+        return base;
+      }
+
+      function renderResults() {
+        const total = state.rows.length || state.results.length || 0;
+        const done = state.results.length;
+        const success = state.results.filter(r => r.status >= 200 && r.status < 300).length;
+        const failed = state.results.filter(r => r.error || r.status >= 400).length;
+        const avg = done ? Math.round(state.results.reduce((sum, r) => sum + (r.durationMs || 0), 0) / done) : 0;
+        $('doneBadge').textContent = `${done} done`;
+        $('successBadge').textContent = `${success} success`;
+        $('failBadge').textContent = `${failed} failed`;
+        $('avgBadge').textContent = `${avg} ms avg`;
+        $('progressBar').style.width = total ? `${Math.min(100, Math.round(done / total * 100))}%` : '0%';
+        $('resultBadge').textContent = state.running ? 'Running' : (done ? 'Complete' : 'Idle');
+        $('resultBadge').className = 'badge ' + (state.running ? 'warn' : done ? 'good' : '');
+
+        if (!state.results.length) {
+          $('resultsTable').innerHTML = '<div class="empty">Run requests to see results here.</div>';
+          return;
+        }
+
+        const rows = state.results.map(resultToRow);
+        const cols = unique(rows.flatMap(row => Object.keys(row)));
+        const html = `
+          <div class="table-wrap">
+            <table>
+              <thead><tr>${cols.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead>
+              <tbody>${rows.map((row, idx) => `
+                <tr data-result-row="${idx}" title="Click for raw response">
+                  ${cols.map(c => {
+                    const val = row[c] ?? '';
+                    const cls = c === 'HTTP Status'
+                      ? (Number(val) >= 200 && Number(val) < 300 ? 'status-ok' : Number(val) >= 400 ? 'status-bad' : 'status-warn')
+                      : (String(val).length > 50 ? 'truncate' : '');
+                    return `<td class="${cls}">${escapeHtml(val)}</td>`;
+                  }).join('')}
+                </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>`;
+        $('resultsTable').innerHTML = html;
+        document.querySelectorAll('[data-result-row]').forEach(row => row.addEventListener('click', () => openResultModal(Number(row.dataset.resultRow))));
+      }
+
+      function openResultModal(index) {
+        const r = state.results[index];
+        if (!r) return;
+        $('modalSubtitle').textContent = `Status ${r.status || 'n/a'} · ${r.durationMs || 0} ms · Row ${index + 1}`;
+        $('modalContent').textContent = JSON.stringify({ input: r.input, request: r.request, mapped: resultToRow(r), response: r.rawSaved ?? r.text ?? r.json, error: r.error }, null, 2);
+        $('modalBackdrop').classList.add('show');
+      }
+
+      function setRunning(isRunning) {
+        state.running = isRunning;
+        $('runBtn').disabled = isRunning;
+        $('runTopBtn').disabled = isRunning;
+        $('testBtn').disabled = isRunning;
+        $('stopBtn').disabled = !isRunning;
+        renderResults();
+      }
+
+      async function runRows({ onlyFirst = false } = {}) {
+        detectVariables();
+        parseBulkInput(false);
+        if (!state.rows.length) {
+          toast('Add or parse at least one input row.', 'bad');
+          return;
+        }
+        if ($('runMode').value !== 'demo' && !$('url').value.trim()) {
+          toast('Enter a request URL or switch to demo mode.', 'bad');
+          return;
+        }
+        const rows = onlyFirst ? state.rows.slice(0, 1) : state.rows;
+        if (!onlyFirst) state.results = [];
+        setRunning(true);
+        state.runStartedAt = performance.now();
+        const concurrency = Math.max(1, Math.min(20, Number($('concurrency').value) || 1));
+        const delayMs = Math.max(0, Number($('delayMs').value) || 0);
+        let nextIndex = 0;
+
+        async function worker() {
+          while (state.running && nextIndex < rows.length) {
+            const localIndex = nextIndex++;
+            const input = rows[localIndex];
+            try {
+              const out = await sendWithRetries(input, localIndex);
+              const response = out.response;
+              const result = {
+                input,
+                request: { ...out.request, headers: maskSensitiveHeaders(out.request.headers) },
+                status: response.status,
+                statusText: response.statusText,
+                durationMs: out.durationMs,
+                attempts: out.attempts,
+                json: response.json,
+                text: response.text,
+                rawSaved: $('saveRaw').value === 'yes' ? (response.json ?? response.text) : undefined,
+                error: response.parseError && !response.json ? `Response is not JSON: ${response.parseError}` : ''
+              };
+              if (onlyFirst) state.results = [result];
+              else state.results.push(result);
+              if (response.json && !state.sampleJson) {
+                state.sampleJson = response.json;
+                state.discoveredPaths = discoverPaths(response.json);
+                if (!state.mappings.length) autoMapFromJson(response.json, true);
+                renderSampleResponse();
+              }
+            } catch (err) {
+              const result = {
+                input,
+                request: null,
+                status: '',
+                statusText: '',
+                durationMs: 0,
+                attempts: Number($('retries').value) + 1,
+                json: null,
+                text: '',
+                rawSaved: undefined,
+                error: err.name === 'AbortError' ? 'Request stopped or timed out.' : (err.message || String(err))
+              };
+              if (onlyFirst) state.results = [result];
+              else state.results.push(result);
+            }
+            renderResults();
+            if (delayMs) await sleep(delayMs);
+          }
+        }
+
+        await Promise.all(Array.from({ length: Math.min(concurrency, rows.length) }, worker));
+        setRunning(false);
+        if (onlyFirst) {
+          const first = state.results[0];
+          if (first?.json) {
+            state.sampleJson = first.json;
+            state.discoveredPaths = discoverPaths(first.json);
+            autoMapFromJson(first.json, !state.mappings.length);
+            renderSampleResponse();
+            toast('Test completed and response fields discovered.', 'good');
+          } else {
+            toast('Test completed, but no JSON response was available to map.', first?.error ? 'bad' : 'info');
+          }
+        } else {
+          const ok = state.results.filter(r => r.status >= 200 && r.status < 300).length;
+          toast(`Run complete: ${ok}/${state.results.length} successful.`, ok ? 'good' : 'bad');
+        }
+      }
+
+      function maskSensitiveHeaders(headers = {}) {
+        const out = {};
+        Object.entries(headers).forEach(([k, v]) => {
+          if (/authorization|api[-_]?key|token|secret|password/i.test(k)) out[k] = '••••••';
+          else out[k] = v;
+        });
+        return out;
+      }
+
+      function stopRun() {
+        state.running = false;
+        state.aborters.forEach(c => c.abort());
+        state.aborters = [];
+        setRunning(false);
+        toast('Run stopped.', 'bad');
+      }
+
+      function toCsv(rows) {
+        if (!rows.length) return '';
+        const cols = unique(rows.flatMap(row => Object.keys(row)));
+        const esc = value => {
+          const str = String(value ?? '');
+          return /[",\n\r]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+        };
+        return [cols.map(esc).join(','), ...rows.map(row => cols.map(c => esc(row[c])).join(','))].join('\n');
+      }
+
+      function download(filename, text, type = 'text/plain') {
+        const blob = new Blob([text], { type });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      function exportRows(format) {
+        if (!state.results.length) {
+          toast('No results to export yet.', 'bad');
+          return;
+        }
+        const rows = state.results.map(resultToRow);
+        const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+        if (format === 'csv') download(`api-bulk-results-${stamp}.csv`, toCsv(rows), 'text/csv');
+        else download(`api-bulk-results-${stamp}.json`, JSON.stringify(state.results, null, 2), 'application/json');
+      }
+
+      async function copyCsv() {
+        if (!state.results.length) return toast('No results to copy yet.', 'bad');
+        const csv = toCsv(state.results.map(resultToRow));
+        try {
+          await navigator.clipboard.writeText(csv);
+          toast('CSV copied to clipboard.', 'good');
+        } catch {
+          toast('Clipboard copy failed. Use Export CSV instead.', 'bad');
+        }
+      }
+
+      function loadDemo() {
+        $('runMode').value = 'demo';
+        $('method').value = 'POST';
+        $('url').value = 'https://api.example.com/customer/details';
+        $('authType').value = 'none';
+        $('contentType').value = 'application/json';
+        $('headers').value = 'X-Client: ReaderNook-Lab\nX-Request-Id: bulk-{{customerNumber}}';
+        $('body').value = JSON.stringify({ customerNumber: '{{customerNumber}}', includeAccount: true, source: 'bulk-runner' }, null, 2);
+        $('bulkInput').value = 'customerNumber\n10001\n10002\n10003\n10004\n10005\n404';
+        $('firstRowMode').value = 'auto';
+        $('concurrency').value = '3';
+        $('delayMs').value = '120';
+        $('retries').value = '1';
+        state.sampleJson = null;
+        state.discoveredPaths = [];
+        state.mappings = [];
+        detectVariables();
+        parseBulkInput(false);
+        updateModeUI();
+        renderMappings();
+        renderSampleResponse();
+        saveSettings();
+        toast('Demo loaded. Click “Test First Row” or “Run Bulk”.', 'good');
+      }
+
+      function sampleRows(mode) {
+        const v = state.variables[0] || 'customerNumber';
+        if (mode === 'csv') return `${v},region,notes\n10001,CA,first customer\n10002,US,priority\n404,CA,missing sample`;
+        if (mode === 'json') return JSON.stringify([{ [v]: '10001', region: 'CA' }, { [v]: '10002', region: 'US' }, { [v]: '404', region: 'CA' }], null, 2);
+        return `10001\n10002\n10003\n404`;
+      }
+
+      function bindEvents() {
+        controls.forEach(id => {
+          const el = $(id);
+          if (!el) return;
+          el.addEventListener('input', () => { detectVariables(); saveSettingsDebounced(); });
+          el.addEventListener('change', () => { detectVariables(); saveSettingsDebounced(); });
+        });
+        $('authType').addEventListener('change', () => { updateAuthFields(); detectVariables(); saveSettings(); });
+        $('runMode').addEventListener('change', () => { updateModeUI(); saveSettings(); });
+        $('fillLocalAgentBtn').addEventListener('click', fillLocalAgentDefaults);
+        $('testProxyBtn').addEventListener('click', testProxyConnection);
+        $('parseBtn').addEventListener('click', () => parseBulkInput(true));
+        $('sampleRowsBtn').addEventListener('click', () => { $('bulkInput').value = sampleRows('single'); parseBulkInput(true); saveSettings(); });
+        $('clearRowsBtn').addEventListener('click', () => { $('bulkInput').value = ''; state.rows = []; state.rowColumns = []; renderInputPreview(); saveSettings(); });
+        $('runBtn').addEventListener('click', () => runRows());
+        $('runTopBtn').addEventListener('click', () => runRows());
+        $('testBtn').addEventListener('click', () => runRows({ onlyFirst: true }));
+        $('stopBtn').addEventListener('click', stopRun);
+        $('autoMapBtn').addEventListener('click', () => autoMapFromJson(state.sampleJson));
+        $('addMapBtn').addEventListener('click', () => addMapping('New Field', '$.'));
+        $('clearMapBtn').addEventListener('click', () => { state.mappings = []; renderMappings(); saveSettings(); });
+        $('exportCsvBtn').addEventListener('click', () => exportRows('csv'));
+        $('exportJsonBtn').addEventListener('click', () => exportRows('json'));
+        $('copyCsvBtn').addEventListener('click', copyCsv);
+        $('clearResultsBtn').addEventListener('click', () => { state.results = []; renderResults(); });
+        $('loadDemoBtn').addEventListener('click', loadDemo);
+        $('themeBtn').addEventListener('click', () => {
+          const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+          document.documentElement.setAttribute('data-theme', current);
+          saveSettings();
+        });
+        $('closeModalBtn').addEventListener('click', () => $('modalBackdrop').classList.remove('show'));
+        $('modalBackdrop').addEventListener('click', (e) => { if (e.target === $('modalBackdrop')) $('modalBackdrop').classList.remove('show'); });
+        document.querySelectorAll('[data-sample]').forEach(tab => tab.addEventListener('click', () => {
+          document.querySelectorAll('[data-sample]').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          $('bulkInput').value = sampleRows(tab.dataset.sample);
+          parseBulkInput(true);
+          saveSettings();
+        }));
+        $('saveTemplateBtn').addEventListener('click', () => {
+          const name = prompt('Template name:', 'Customer Lookup');
+          if (!name) return;
+          const templates = getTemplates();
+          templates[name] = readForm();
+          setTemplates(templates);
+          $('templateSelect').value = name;
+          toast('Template saved locally.', 'good');
+        });
+        $('loadTemplateBtn').addEventListener('click', () => {
+          const name = $('templateSelect').value;
+          const templates = getTemplates();
+          if (!name || !templates[name]) return toast('Select a saved template first.', 'bad');
+          writeForm(templates[name]);
+          saveSettings();
+          toast('Template loaded.', 'good');
+        });
+        $('deleteTemplateBtn').addEventListener('click', () => {
+          const name = $('templateSelect').value;
+          if (!name) return;
+          const templates = getTemplates();
+          delete templates[name];
+          setTemplates(templates);
+          toast('Template deleted.', 'good');
+        });
+      }
+
+      const saveSettingsDebounced = debounce(saveSettings, 350);
+
+      function init() {
+        bindEvents();
+        updateAuthFields();
+        renderTemplateSelect();
+        const restored = loadSettings();
+        if (!restored) loadDemo();
+        detectVariables();
+        parseBulkInput(false);
+        renderMappings();
+        renderSampleResponse();
+        renderResults();
+        updateModeUI();
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "api-bulk-runner-local-agent",
+  "version": "1.0.0",
+  "description": "Local CORS-safe request forwarding agent for API Bulk Runner & Smart Response Mapper.",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node local-agent.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "UNLICENSED"
+}
