@@ -83,7 +83,7 @@
 
     .hero::after { content: none; }
 
-    .hero-top, .toolbar, .row, .section-title, .status-line, .template-row, .auth-grid, .mapping-actions, .result-actions {
+    .hero-top, .toolbar, .row, .section-title, .status-line, .template-row, .template-actions, .template-detail-actions, .auth-grid, .mapping-actions, .result-actions {
       display: flex;
       align-items: center;
       gap: 12px;
@@ -395,6 +395,109 @@
       flex-wrap: wrap;
     }
 
+    .template-library {
+      display: grid;
+      grid-template-columns: minmax(260px, .9fr) minmax(280px, 1.1fr);
+      gap: 12px;
+      align-items: stretch;
+    }
+    .template-sidebar, .template-detail {
+      border: 1px solid rgba(148, 163, 184, .26);
+      border-radius: 8px;
+      background: rgba(255,255,255,.48);
+      min-height: 280px;
+    }
+    [data-theme="dark"] .template-sidebar, [data-theme="dark"] .template-detail { background: rgba(15,23,42,.38); }
+    .template-sidebar { padding: 10px; }
+    .template-actions { gap: 8px; margin-bottom: 10px; }
+    .template-actions input { flex: 1 1 180px; }
+    .template-tree {
+      display: grid;
+      gap: 4px;
+      max-height: 420px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+    .template-node-main {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 20px minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text);
+      padding: 8px 8px 8px calc(8px + (var(--depth, 0) * 18px));
+      text-align: left;
+      min-height: 38px;
+    }
+    .template-node-main:hover { background: rgba(37, 99, 235, .07); border-color: rgba(37, 99, 235, .18); }
+    .template-node-main.selected { background: rgba(37, 99, 235, .12); border-color: rgba(37, 99, 235, .34); }
+    .template-caret {
+      width: 20px;
+      height: 20px;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-size: 12px;
+      font-family: var(--mono);
+    }
+    .template-name-wrap { min-width: 0; }
+    .template-name {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 900;
+      font-size: 13px;
+    }
+    .template-url {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--muted);
+      font-size: 11px;
+      margin-top: 2px;
+    }
+    .method-chip {
+      justify-self: end;
+      border: 1px solid rgba(148, 163, 184, .28);
+      border-radius: 999px;
+      padding: 3px 7px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 900;
+    }
+    .template-count {
+      justify-self: end;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .template-detail {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .template-detail-body { flex: 1 1 auto; min-height: 0; }
+    .template-detail-body h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+      line-height: 1.25;
+    }
+    .template-meta {
+      display: grid;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .template-detail-actions { gap: 8px; }
+
     .progress {
       height: 12px;
       width: 100%;
@@ -489,6 +592,7 @@
       .hero-top { align-items: flex-start; }
       .section-title { align-items: flex-start; }
       .result-actions select { flex: 1 1 100%; }
+      .template-library { grid-template-columns: 1fr; }
     }
     @media (max-width: 640px) {
       .app-shell { width: min(100% - 16px, 1500px); padding-top: 8px; padding-bottom: 28px; }
@@ -506,8 +610,9 @@
       .mapping-row { grid-template-columns: 1fr; }
       .request-map-row { grid-template-columns: 1fr; }
       .mapping-row .btn { justify-content: center; }
-      .toolbar .btn, .result-actions .btn, .template-row .btn, .grid-tools .btn { flex: 1 1 auto; justify-content: center; }
-      .template-row select, .select-row select { flex: 1 1 100%; }
+      .toolbar .btn, .result-actions .btn, .template-row .btn, .template-actions .btn, .template-detail-actions .btn, .grid-tools .btn { flex: 1 1 auto; justify-content: center; }
+      .template-row select, .template-actions input, .select-row select { flex: 1 1 100%; }
+      .template-tree { max-height: 320px; }
       .bulk-grid-editor { max-height: 280px; }
       .bulk-grid-editor input { min-width: 128px; }
       table { min-width: 640px; }
@@ -842,14 +947,28 @@
           <div class="section-title">
             <div>
               <h2>Template Library</h2>
-              <p>Save and transfer bulk run templates with request and response mappings.</p>
+              <p>Save and organize bulk run templates with request and response mappings.</p>
             </div>
           </div>
-          <div class="template-row">
-            <select id="templateSelect" style="flex: 1 1 220px;"></select>
-            <button class="btn" id="saveTemplateBtn" type="button">Save</button>
-            <button class="btn" id="loadTemplateBtn" type="button">Load</button>
-            <button class="btn danger" id="deleteTemplateBtn" type="button">Delete</button>
+          <div class="template-library">
+            <div class="template-sidebar">
+              <div class="template-actions">
+                <input id="templateSearch" placeholder="Search templates" />
+                <button class="btn small" id="newFolderBtn" type="button">New Folder</button>
+                <button class="btn small" id="saveTemplateBtn" type="button">Save Current</button>
+              </div>
+              <div id="templateTree" class="template-tree"></div>
+            </div>
+            <div class="template-detail">
+              <div id="templateDetailBody" class="template-detail-body"></div>
+              <div class="template-detail-actions">
+                <button class="btn" id="loadTemplateBtn" type="button">Load</button>
+                <button class="btn" id="updateTemplateBtn" type="button">Update</button>
+                <button class="btn" id="renameTemplateBtn" type="button">Rename</button>
+                <button class="btn" id="moveTemplateBtn" type="button">Move</button>
+                <button class="btn danger" id="deleteTemplateBtn" type="button">Delete</button>
+              </div>
+            </div>
           </div>
           <div class="toolbar" style="margin-top: 12px;">
             <button class="btn" id="exportLibraryBtn" type="button">Export Library</button>
@@ -928,13 +1047,17 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         gridMinRows: 4,
         running: false,
         aborters: [],
-        runStartedAt: 0
+        runStartedAt: 0,
+        templateSelection: null,
+        templateSearch: '',
+        templateCollapsed: {}
       };
 
       const storageKeys = {
         settings: 'apiBulkRunner.settings.v1',
         templates: 'apiBulkRunner.templates.v1'
       };
+      const ROOT_FOLDER_ID = 'root';
 
       const controls = [
         'runMode', 'proxyUrl', 'proxyToken', 'method', 'url', 'authType', 'contentType', 'headers', 'body',
@@ -1098,15 +1221,6 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         }
       }
 
-      function getTemplates() {
-        return getStore('templates');
-      }
-
-      function setTemplates(templates) {
-        setStore('templates', templates);
-        renderTemplateSelect();
-      }
-
       function getStore(name) {
         try { return JSON.parse(localStorage.getItem(storageKeys[name]) || '{}'); }
         catch { return {}; }
@@ -1116,16 +1230,349 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         localStorage.setItem(storageKeys[name], JSON.stringify(value || {}));
       }
 
-      function renderTemplateSelect() {
-        const templates = getTemplates();
-        const names = Object.keys(templates).sort((a, b) => a.localeCompare(b));
-        $('templateSelect').innerHTML = names.length
-          ? names.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('')
-          : '<option value="">No saved templates yet</option>';
+      function makeId(prefix) {
+        return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+      }
+
+      function isTemplateLibrary(value) {
+        return value && value.version === 2 && Array.isArray(value.folders) && Array.isArray(value.templates);
+      }
+
+      function emptyTemplateLibrary() {
+        return { version: 2, folders: [], templates: [] };
+      }
+
+      function splitTemplatePath(name) {
+        const parts = String(name || '').split(/[\\/]/).map(part => part.trim()).filter(Boolean);
+        if (!parts.length) return { folders: [], name: 'Untitled Request' };
+        return { folders: parts.slice(0, -1), name: parts[parts.length - 1] };
+      }
+
+      function normalizeTemplateLibrary(raw) {
+        if (isTemplateLibrary(raw)) {
+          const folderIds = new Set([ROOT_FOLDER_ID]);
+          const folders = raw.folders
+            .filter(folder => folder && folder.id && String(folder.name || '').trim())
+            .map(folder => ({
+              id: String(folder.id),
+              name: String(folder.name).trim(),
+              parentId: folder.parentId && folder.parentId !== folder.id ? String(folder.parentId) : ROOT_FOLDER_ID,
+              createdAt: folder.createdAt || new Date().toISOString(),
+              updatedAt: folder.updatedAt || folder.createdAt || new Date().toISOString()
+            }));
+          folders.forEach(folder => folderIds.add(folder.id));
+          folders.forEach(folder => {
+            if (!folderIds.has(folder.parentId) || folder.parentId === folder.id) folder.parentId = ROOT_FOLDER_ID;
+          });
+          const templates = raw.templates
+            .filter(template => template && template.id && String(template.name || '').trim() && template.config && typeof template.config === 'object')
+            .map(template => ({
+              id: String(template.id),
+              name: String(template.name).trim(),
+              folderId: folderIds.has(template.folderId) ? String(template.folderId) : ROOT_FOLDER_ID,
+              config: template.config,
+              createdAt: template.createdAt || new Date().toISOString(),
+              updatedAt: template.updatedAt || template.createdAt || new Date().toISOString()
+            }));
+          return { version: 2, folders, templates };
+        }
+
+        const library = emptyTemplateLibrary();
+        const folderByPath = new Map();
+        const getFolderForPath = (parts) => {
+          let parentId = ROOT_FOLDER_ID;
+          let path = '';
+          parts.forEach(part => {
+            path = path ? `${path}/${part.toLowerCase()}` : part.toLowerCase();
+            if (!folderByPath.has(path)) {
+              const folder = {
+                id: makeId('folder'),
+                name: part,
+                parentId,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              };
+              library.folders.push(folder);
+              folderByPath.set(path, folder.id);
+            }
+            parentId = folderByPath.get(path);
+          });
+          return parentId;
+        };
+
+        Object.entries(raw || {}).forEach(([flatName, config]) => {
+          if (!config || typeof config !== 'object') return;
+          const parsed = splitTemplatePath(flatName);
+          library.templates.push({
+            id: makeId('template'),
+            name: parsed.name,
+            folderId: getFolderForPath(parsed.folders),
+            config,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          });
+        });
+        return library;
+      }
+
+      function getTemplateLibrary() {
+        const raw = getStore('templates');
+        const library = normalizeTemplateLibrary(raw);
+        if (!isTemplateLibrary(raw)) setStore('templates', library);
+        return library;
+      }
+
+      function setTemplateLibrary(library) {
+        setStore('templates', normalizeTemplateLibrary(library));
+        renderSavedLibrary();
+      }
+
+      function folderPath(library, folderId) {
+        const byId = new Map(library.folders.map(folder => [folder.id, folder]));
+        const parts = [];
+        let current = byId.get(folderId);
+        let guard = 0;
+        while (current && guard < 80) {
+          parts.unshift(current.name);
+          current = byId.get(current.parentId);
+          guard += 1;
+        }
+        return parts;
+      }
+
+      function folderPathLabel(library, folderId) {
+        const parts = folderPath(library, folderId);
+        return parts.length ? parts.join(' / ') : 'Library';
+      }
+
+      function resolveFolderPath(library, path, createMissing = false) {
+        const parts = String(path || '').split(/[\\/]/).map(part => part.trim()).filter(Boolean);
+        let parentId = ROOT_FOLDER_ID;
+        parts.forEach(part => {
+          let folder = library.folders.find(item => item.parentId === parentId && item.name.toLowerCase() === part.toLowerCase());
+          if (!folder && createMissing) {
+            folder = { id: makeId('folder'), name: part, parentId, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+            library.folders.push(folder);
+          }
+          if (folder) parentId = folder.id;
+        });
+        return parentId;
+      }
+
+      function isFolderDescendant(library, folderId, possibleAncestorId) {
+        const byId = new Map(library.folders.map(folder => [folder.id, folder]));
+        let current = byId.get(folderId);
+        let guard = 0;
+        while (current && guard < 80) {
+          if (current.parentId === possibleAncestorId) return true;
+          current = byId.get(current.parentId);
+          guard += 1;
+        }
+        return false;
+      }
+
+      function childFolderIds(library, folderId) {
+        const ids = [];
+        const visited = new Set();
+        const walk = (parentId) => {
+          library.folders.filter(folder => folder.parentId === parentId).forEach(folder => {
+            if (visited.has(folder.id)) return;
+            visited.add(folder.id);
+            ids.push(folder.id);
+            walk(folder.id);
+          });
+        };
+        walk(folderId);
+        return ids;
+      }
+
+      function folderItemCount(library, folderId) {
+        const ids = [folderId, ...childFolderIds(library, folderId)];
+        return library.templates.filter(template => ids.includes(template.folderId)).length;
+      }
+
+      function templateMethod(template) {
+        return String(template.config?.method || 'GET').toUpperCase();
+      }
+
+      function templateUrl(template) {
+        return String(template.config?.url || '').trim();
+      }
+
+      function currentTemplateFolderId(library) {
+        const selected = getSelectedLibraryItem(library);
+        if (selected?.type === 'folder') return selected.item.id;
+        if (selected?.type === 'template') return selected.item.folderId;
+        return ROOT_FOLDER_ID;
+      }
+
+      function getSelectedLibraryItem(library = getTemplateLibrary()) {
+        const selected = state.templateSelection;
+        if (!selected) return null;
+        if (selected.type === 'folder') {
+          const folder = library.folders.find(item => item.id === selected.id);
+          return folder ? { type: 'folder', item: folder } : null;
+        }
+        if (selected.type === 'template') {
+          const template = library.templates.find(item => item.id === selected.id);
+          return template ? { type: 'template', item: template } : null;
+        }
+        return null;
+      }
+
+      function ensureTemplateSelection(library) {
+        if (getSelectedLibraryItem(library)) return;
+        const firstTemplate = [...library.templates].sort((a, b) => a.name.localeCompare(b.name))[0];
+        const firstFolder = [...library.folders].sort((a, b) => a.name.localeCompare(b.name))[0];
+        state.templateSelection = firstTemplate
+          ? { type: 'template', id: firstTemplate.id }
+          : (firstFolder ? { type: 'folder', id: firstFolder.id } : null);
+      }
+
+      function findDuplicateFolder(library, name, parentId, ignoreId = '') {
+        return library.folders.find(folder => folder.id !== ignoreId && folder.parentId === parentId && folder.name.toLowerCase() === name.toLowerCase());
+      }
+
+      function findDuplicateTemplate(library, name, folderId, ignoreId = '') {
+        return library.templates.find(template => template.id !== ignoreId && template.folderId === folderId && template.name.toLowerCase() === name.toLowerCase());
+      }
+
+      function mergeTemplateLibraries(target, incoming) {
+        const merged = normalizeTemplateLibrary(target);
+        const source = normalizeTemplateLibrary(incoming);
+        const ensureFolder = (parts) => resolveFolderPath(merged, parts.join('/'), true);
+
+        source.folders
+          .sort((a, b) => folderPath(source, a.id).length - folderPath(source, b.id).length)
+          .forEach(folder => ensureFolder(folderPath(source, folder.id)));
+
+        source.templates.forEach(template => {
+          const folderId = ensureFolder(folderPath(source, template.folderId));
+          const existing = findDuplicateTemplate(merged, template.name, folderId);
+          const next = {
+            id: existing?.id || makeId('template'),
+            name: template.name,
+            folderId,
+            config: template.config,
+            createdAt: existing?.createdAt || template.createdAt || new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+          if (existing) Object.assign(existing, next);
+          else merged.templates.push(next);
+        });
+        return merged;
+      }
+
+      function renderTemplateTree(library) {
+        const query = state.templateSearch.trim().toLowerCase();
+        const foldersByParent = new Map();
+        const templatesByFolder = new Map();
+        library.folders.forEach(folder => {
+          if (!foldersByParent.has(folder.parentId)) foldersByParent.set(folder.parentId, []);
+          foldersByParent.get(folder.parentId).push(folder);
+        });
+        library.templates.forEach(template => {
+          if (!templatesByFolder.has(template.folderId)) templatesByFolder.set(template.folderId, []);
+          templatesByFolder.get(template.folderId).push(template);
+        });
+        [...foldersByParent.values()].forEach(items => items.sort((a, b) => a.name.localeCompare(b.name)));
+        [...templatesByFolder.values()].forEach(items => items.sort((a, b) => a.name.localeCompare(b.name)));
+
+        const templateMatches = (template) => {
+          if (!query) return true;
+          const haystack = `${folderPathLabel(library, template.folderId)} ${template.name} ${templateMethod(template)} ${templateUrl(template)}`.toLowerCase();
+          return haystack.includes(query);
+        };
+        const folderMatches = (folder) => {
+          if (!query) return true;
+          if (`${folderPathLabel(library, folder.id)} ${folder.name}`.toLowerCase().includes(query)) return true;
+          const descendants = [folder.id, ...childFolderIds(library, folder.id)];
+          return library.templates.some(template => descendants.includes(template.folderId) && templateMatches(template));
+        };
+
+        const selected = state.templateSelection;
+        const rows = [];
+        const renderFolder = (folder, depth) => {
+          if (!folderMatches(folder)) return;
+          const hasChildren = (foldersByParent.get(folder.id) || []).length || (templatesByFolder.get(folder.id) || []).length;
+          const collapsed = !query && state.templateCollapsed[folder.id];
+          const selectedClass = selected?.type === 'folder' && selected.id === folder.id ? ' selected' : '';
+          rows.push(`
+            <button class="template-node-main${selectedClass}" type="button" data-template-type="folder" data-template-id="${escapeHtml(folder.id)}" style="--depth:${depth}">
+              <span class="template-caret" data-template-toggle="${escapeHtml(folder.id)}">${hasChildren ? (collapsed ? '&gt;' : 'v') : ''}</span>
+              <span class="template-name-wrap"><span class="template-name">${escapeHtml(folder.name)}</span><span class="template-url">${escapeHtml(folderPathLabel(library, folder.parentId))}</span></span>
+              <span class="template-count">${folderItemCount(library, folder.id)}</span>
+            </button>
+          `);
+          if (collapsed) return;
+          (foldersByParent.get(folder.id) || []).forEach(child => renderFolder(child, depth + 1));
+          (templatesByFolder.get(folder.id) || []).filter(templateMatches).forEach(template => renderTemplate(template, depth + 1));
+        };
+        const renderTemplate = (template, depth) => {
+          const selectedClass = selected?.type === 'template' && selected.id === template.id ? ' selected' : '';
+          rows.push(`
+            <button class="template-node-main${selectedClass}" type="button" data-template-type="template" data-template-id="${escapeHtml(template.id)}" style="--depth:${depth}">
+              <span class="template-caret"></span>
+              <span class="template-name-wrap"><span class="template-name">${escapeHtml(template.name)}</span><span class="template-url">${escapeHtml(templateUrl(template) || folderPathLabel(library, template.folderId))}</span></span>
+              <span class="method-chip">${escapeHtml(templateMethod(template))}</span>
+            </button>
+          `);
+        };
+
+        (foldersByParent.get(ROOT_FOLDER_ID) || []).forEach(folder => renderFolder(folder, 0));
+        (templatesByFolder.get(ROOT_FOLDER_ID) || []).filter(templateMatches).forEach(template => renderTemplate(template, 0));
+        $('templateTree').innerHTML = rows.length ? rows.join('') : '<div class="empty">No saved templates yet.</div>';
+      }
+
+      function renderTemplateDetail(library) {
+        const selected = getSelectedLibraryItem(library);
+        const isTemplate = selected?.type === 'template';
+        const isFolder = selected?.type === 'folder';
+
+        $('loadTemplateBtn').disabled = !isTemplate;
+        $('updateTemplateBtn').disabled = !isTemplate;
+        $('renameTemplateBtn').disabled = !selected;
+        $('moveTemplateBtn').disabled = !selected;
+        $('deleteTemplateBtn').disabled = !selected;
+
+        if (!selected) {
+          $('templateDetailBody').innerHTML = `
+            <div class="empty">Save the current request as a template or create a folder to start organizing.</div>
+          `;
+          return;
+        }
+
+        if (isFolder) {
+          const count = folderItemCount(library, selected.item.id);
+          $('templateDetailBody').innerHTML = `
+            <h3>${escapeHtml(selected.item.name)}</h3>
+            <div class="template-meta">
+              <div>Folder: ${escapeHtml(folderPathLabel(library, selected.item.id))}</div>
+              <div>${count} request template${count === 1 ? '' : 's'}</div>
+              <div>Updated: ${escapeHtml(new Date(selected.item.updatedAt).toLocaleString())}</div>
+            </div>
+          `;
+          return;
+        }
+
+        const template = selected.item;
+        $('templateDetailBody').innerHTML = `
+          <h3>${escapeHtml(template.name)}</h3>
+          <div class="template-meta">
+            <div>Folder: ${escapeHtml(folderPathLabel(library, template.folderId))}</div>
+            <div>Method: <span class="mono">${escapeHtml(templateMethod(template))}</span></div>
+            <div>URL: <span class="mono">${escapeHtml(templateUrl(template) || 'No URL saved')}</span></div>
+            <div>Updated: ${escapeHtml(new Date(template.updatedAt).toLocaleString())}</div>
+          </div>
+        `;
       }
 
       function renderSavedLibrary() {
-        renderTemplateSelect();
+        const library = getTemplateLibrary();
+        ensureTemplateSelection(library);
+        if ($('templateSearch')) $('templateSearch').value = state.templateSearch;
+        renderTemplateTree(library);
+        renderTemplateDetail(library);
       }
 
       function renderDemoSelect() {
@@ -2397,13 +2844,156 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         return `${10001 + index}`;
       }
 
+      function defaultTemplateName() {
+        const url = ($('url')?.value || '').trim();
+        try {
+          const parsed = new URL(url);
+          const lastPath = parsed.pathname.split('/').filter(Boolean).pop();
+          return titleFromPath(lastPath || parsed.hostname);
+        } catch {
+          return url ? titleFromPath(url.split('/').filter(Boolean).pop() || url) : 'New Request';
+        }
+      }
+
+      function createTemplateFolder() {
+        const library = getTemplateLibrary();
+        const parentId = currentTemplateFolderId(library);
+        const name = (prompt('Folder name:', 'New Folder') || '').trim();
+        if (!name) return;
+        if (findDuplicateFolder(library, name, parentId)) return toast('A folder with that name already exists here.', 'bad');
+        const now = new Date().toISOString();
+        const folder = { id: makeId('folder'), name, parentId, createdAt: now, updatedAt: now };
+        library.folders.push(folder);
+        state.templateSelection = { type: 'folder', id: folder.id };
+        setTemplateLibrary(library);
+        toast('Folder created.', 'good');
+      }
+
+      function saveCurrentTemplate() {
+        const library = getTemplateLibrary();
+        const folderId = currentTemplateFolderId(library);
+        const name = (prompt('Request template name:', defaultTemplateName()) || '').trim();
+        if (!name) return;
+        const existing = findDuplicateTemplate(library, name, folderId);
+        if (existing && !confirm('A template with that name already exists in this folder. Update it?')) return;
+        const now = new Date().toISOString();
+        if (existing) {
+          existing.config = readForm();
+          existing.updatedAt = now;
+          state.templateSelection = { type: 'template', id: existing.id };
+          setTemplateLibrary(library);
+          toast('Template updated.', 'good');
+          return;
+        }
+        const template = { id: makeId('template'), name, folderId, config: readForm(), createdAt: now, updatedAt: now };
+        library.templates.push(template);
+        state.templateSelection = { type: 'template', id: template.id };
+        setTemplateLibrary(library);
+        toast('Template saved locally.', 'good');
+      }
+
+      function loadSelectedTemplate() {
+        const selected = getSelectedLibraryItem();
+        if (selected?.type !== 'template') return toast('Select a request template first.', 'bad');
+        writeForm(selected.item.config);
+        saveSettings();
+        toast('Template loaded.', 'good');
+      }
+
+      function updateSelectedTemplate() {
+        const library = getTemplateLibrary();
+        const selected = getSelectedLibraryItem(library);
+        if (selected?.type !== 'template') return toast('Select a request template first.', 'bad');
+        selected.item.config = readForm();
+        selected.item.updatedAt = new Date().toISOString();
+        setTemplateLibrary(library);
+        toast('Selected template updated.', 'good');
+      }
+
+      function renameSelectedTemplateItem() {
+        const library = getTemplateLibrary();
+        const selected = getSelectedLibraryItem(library);
+        if (!selected) return toast('Select a folder or request template first.', 'bad');
+        const name = (prompt('New name:', selected.item.name) || '').trim();
+        if (!name || name === selected.item.name) return;
+        if (selected.type === 'folder' && findDuplicateFolder(library, name, selected.item.parentId, selected.item.id)) {
+          return toast('A folder with that name already exists here.', 'bad');
+        }
+        if (selected.type === 'template' && findDuplicateTemplate(library, name, selected.item.folderId, selected.item.id)) {
+          return toast('A template with that name already exists here.', 'bad');
+        }
+        selected.item.name = name;
+        selected.item.updatedAt = new Date().toISOString();
+        setTemplateLibrary(library);
+        toast('Renamed.', 'good');
+      }
+
+      function moveSelectedTemplateItem() {
+        const library = getTemplateLibrary();
+        const selected = getSelectedLibraryItem(library);
+        if (!selected) return toast('Select a folder or request template first.', 'bad');
+        const currentPath = selected.type === 'template'
+          ? folderPathLabel(library, selected.item.folderId)
+          : folderPathLabel(library, selected.item.parentId);
+        const label = selected.type === 'template' ? 'Move to folder path:' : 'Move folder under path:';
+        const rawPath = prompt(`${label}\nUse / between folder names. Leave blank for Library.`, currentPath === 'Library' ? '' : currentPath);
+        if (rawPath === null) return;
+        const targetFolderId = resolveFolderPath(library, rawPath, true);
+
+        if (selected.type === 'template') {
+          if (findDuplicateTemplate(library, selected.item.name, targetFolderId, selected.item.id)) {
+            return toast('A template with that name already exists in the target folder.', 'bad');
+          }
+          selected.item.folderId = targetFolderId;
+          selected.item.updatedAt = new Date().toISOString();
+          setTemplateLibrary(library);
+          toast('Template moved.', 'good');
+          return;
+        }
+
+        if (targetFolderId === selected.item.id || isFolderDescendant(library, targetFolderId, selected.item.id)) {
+          return toast('A folder cannot be moved into itself or one of its child folders.', 'bad');
+        }
+        if (findDuplicateFolder(library, selected.item.name, targetFolderId, selected.item.id)) {
+          return toast('A folder with that name already exists in the target folder.', 'bad');
+        }
+        selected.item.parentId = targetFolderId;
+        selected.item.updatedAt = new Date().toISOString();
+        setTemplateLibrary(library);
+        toast('Folder moved.', 'good');
+      }
+
+      function deleteSelectedTemplateItem() {
+        const library = getTemplateLibrary();
+        const selected = getSelectedLibraryItem(library);
+        if (!selected) return toast('Select a folder or request template first.', 'bad');
+        if (selected.type === 'template') {
+          if (!confirm(`Delete "${selected.item.name}"?`)) return;
+          library.templates = library.templates.filter(template => template.id !== selected.item.id);
+          state.templateSelection = null;
+          setTemplateLibrary(library);
+          toast('Template deleted.', 'good');
+          return;
+        }
+
+        const descendants = childFolderIds(library, selected.item.id);
+        const folderIds = [selected.item.id, ...descendants];
+        const templateCount = library.templates.filter(template => folderIds.includes(template.folderId)).length;
+        if (!confirm(`Delete "${selected.item.name}" and ${templateCount} request template${templateCount === 1 ? '' : 's'}?`)) return;
+        library.folders = library.folders.filter(folder => !folderIds.includes(folder.id));
+        library.templates = library.templates.filter(template => !folderIds.includes(template.folderId));
+        state.templateSelection = null;
+        setTemplateLibrary(library);
+        toast('Folder deleted.', 'good');
+      }
+
       function exportLibrary() {
         const payload = {
           app: 'api-bulk-runner',
           version: 1,
           exportedAt: new Date().toISOString(),
           settings: readForm(),
-          templates: getStore('templates')
+          templates: getTemplateLibrary()
         };
         const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
         download(`api-bulk-runner-library-${stamp}.json`, JSON.stringify(payload, null, 2), 'application/json');
@@ -2414,7 +3004,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         try {
           const payload = JSON.parse(await file.text());
           if (payload.templates && typeof payload.templates === 'object') {
-            setStore('templates', { ...getStore('templates'), ...payload.templates });
+            setTemplateLibrary(mergeTemplateLibraries(getTemplateLibrary(), payload.templates));
           }
           if (payload.settings && typeof payload.settings === 'object') {
             writeForm(payload.settings);
@@ -2495,31 +3085,36 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
           renderDemoArtifacts();
           saveSettings();
         }));
-        $('saveTemplateBtn').addEventListener('click', () => {
-          const name = prompt('Template name:', 'Customer Lookup');
-          if (!name) return;
-          const templates = getTemplates();
-          templates[name] = readForm();
-          setTemplates(templates);
-          $('templateSelect').value = name;
-          toast('Template saved locally.', 'good');
+        $('templateSearch').addEventListener('input', () => {
+          state.templateSearch = $('templateSearch').value;
+          renderSavedLibrary();
         });
-        $('loadTemplateBtn').addEventListener('click', () => {
-          const name = $('templateSelect').value;
-          const templates = getTemplates();
-          if (!name || !templates[name]) return toast('Select a saved template first.', 'bad');
-          writeForm(templates[name]);
-          saveSettings();
-          toast('Template loaded.', 'good');
+        $('templateTree').addEventListener('click', (e) => {
+          const toggle = e.target.closest('[data-template-toggle]');
+          if (toggle && toggle.dataset.templateToggle) {
+            state.templateCollapsed[toggle.dataset.templateToggle] = !state.templateCollapsed[toggle.dataset.templateToggle];
+            renderSavedLibrary();
+            return;
+          }
+          const node = e.target.closest('[data-template-type][data-template-id]');
+          if (!node) return;
+          state.templateSelection = { type: node.dataset.templateType, id: node.dataset.templateId };
+          renderSavedLibrary();
         });
-        $('deleteTemplateBtn').addEventListener('click', () => {
-          const name = $('templateSelect').value;
-          if (!name) return;
-          const templates = getTemplates();
-          delete templates[name];
-          setTemplates(templates);
-          toast('Template deleted.', 'good');
+        $('templateTree').addEventListener('dblclick', (e) => {
+          const node = e.target.closest('[data-template-type="template"][data-template-id]');
+          if (!node) return;
+          state.templateSelection = { type: 'template', id: node.dataset.templateId };
+          loadSelectedTemplate();
+          renderSavedLibrary();
         });
+        $('newFolderBtn').addEventListener('click', createTemplateFolder);
+        $('saveTemplateBtn').addEventListener('click', saveCurrentTemplate);
+        $('loadTemplateBtn').addEventListener('click', loadSelectedTemplate);
+        $('updateTemplateBtn').addEventListener('click', updateSelectedTemplate);
+        $('renameTemplateBtn').addEventListener('click', renameSelectedTemplateItem);
+        $('moveTemplateBtn').addEventListener('click', moveSelectedTemplateItem);
+        $('deleteTemplateBtn').addEventListener('click', deleteSelectedTemplateItem);
         $('exportLibraryBtn').addEventListener('click', exportLibrary);
         $('importLibraryBtn').addEventListener('click', () => $('importLibraryFile').click());
         $('importLibraryFile').addEventListener('change', () => importLibraryFile($('importLibraryFile').files[0]));
