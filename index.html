@@ -8,43 +8,43 @@
   <style>
     :root {
       color-scheme: light;
-      --bg: #f5f7fb;
-      --bg2: #eef2ff;
-      --panel: rgba(255, 255, 255, 0.86);
+      --bg: #f6f8fb;
+      --bg2: #edf1f7;
+      --panel: #ffffff;
       --panel-strong: #ffffff;
       --text: #0f172a;
-      --muted: #64748b;
-      --soft: #e2e8f0;
+      --muted: #5f6f86;
+      --soft: #dbe3ee;
       --softer: #f1f5f9;
-      --brand: #4f46e5;
-      --brand2: #06b6d4;
+      --brand: #2563eb;
+      --brand2: #0891b2;
       --good: #059669;
       --warn: #d97706;
       --bad: #dc2626;
-      --shadow: 0 20px 50px rgba(15, 23, 42, 0.10);
-      --shadow2: 0 12px 30px rgba(15, 23, 42, 0.08);
-      --radius: 24px;
+      --shadow: 0 1px 2px rgba(15, 23, 42, 0.08), 0 8px 24px rgba(15, 23, 42, 0.06);
+      --shadow2: 0 1px 2px rgba(15, 23, 42, 0.08), 0 6px 18px rgba(15, 23, 42, 0.06);
+      --radius: 8px;
       --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
     [data-theme="dark"] {
       color-scheme: dark;
-      --bg: #070b18;
+      --bg: #0b1020;
       --bg2: #111827;
-      --panel: rgba(15, 23, 42, 0.82);
-      --panel-strong: #101827;
+      --panel: #111827;
+      --panel-strong: #162033;
       --text: #e5e7eb;
       --muted: #94a3b8;
       --soft: #263244;
       --softer: #111827;
-      --brand: #818cf8;
+      --brand: #60a5fa;
       --brand2: #22d3ee;
       --good: #34d399;
       --warn: #fbbf24;
       --bad: #f87171;
-      --shadow: 0 25px 70px rgba(0, 0, 0, 0.36);
-      --shadow2: 0 12px 34px rgba(0, 0, 0, 0.28);
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.36), 0 10px 30px rgba(0, 0, 0, 0.22);
+      --shadow2: 0 1px 2px rgba(0, 0, 0, 0.30), 0 8px 22px rgba(0, 0, 0, 0.18);
     }
 
     * { box-sizing: border-box; }
@@ -52,10 +52,7 @@
     body {
       margin: 0;
       font-family: var(--sans);
-      background:
-        radial-gradient(circle at top left, rgba(79, 70, 229, 0.22), transparent 34rem),
-        radial-gradient(circle at top right, rgba(6, 182, 212, 0.22), transparent 32rem),
-        linear-gradient(135deg, var(--bg), var(--bg2));
+      background: linear-gradient(180deg, var(--bg), var(--bg2));
       color: var(--text);
       min-height: 100vh;
     }
@@ -64,38 +61,27 @@
     button { cursor: pointer; }
 
     .app-shell {
-      width: min(1500px, calc(100% - 28px));
+      width: min(1440px, calc(100% - 32px));
       margin: 0 auto;
-      padding: 24px 0 60px;
+      padding: 16px 0 48px;
     }
 
     .hero {
       position: relative;
       overflow: hidden;
       border: 1px solid rgba(148, 163, 184, 0.28);
-      background: linear-gradient(135deg, rgba(255,255,255,0.86), rgba(255,255,255,0.54));
-      backdrop-filter: blur(16px);
-      border-radius: 24px;
+      background: var(--panel);
+      border-radius: var(--radius);
       box-shadow: var(--shadow);
-      padding: 20px 22px;
-      margin-bottom: 18px;
+      padding: 16px;
+      margin-bottom: 14px;
     }
 
     [data-theme="dark"] .hero {
-      background: linear-gradient(135deg, rgba(15,23,42,0.90), rgba(15,23,42,0.55));
+      background: var(--panel);
     }
 
-    .hero::after {
-      content: "";
-      position: absolute;
-      width: 360px;
-      height: 360px;
-      border-radius: 999px;
-      background: radial-gradient(circle, rgba(99, 102, 241, 0.16), transparent 64%);
-      right: -120px;
-      top: -140px;
-      pointer-events: none;
-    }
+    .hero::after { content: none; }
 
     .hero-top, .toolbar, .row, .section-title, .status-line, .template-row, .auth-grid, .mapping-actions, .result-actions {
       display: flex;
@@ -105,17 +91,17 @@
     }
 
     .hero-top { justify-content: space-between; position: relative; z-index: 1; }
-    .brand-lockup { display: flex; gap: 14px; align-items: center; }
+    .brand-lockup { display: flex; gap: 12px; align-items: center; min-width: 0; }
     .logo {
-      width: 54px;
-      height: 54px;
-      border-radius: 18px;
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
       display: grid;
       place-items: center;
       color: white;
       background: linear-gradient(135deg, #4f46e5, #06b6d4);
-      box-shadow: 0 16px 34px rgba(79, 70, 229, 0.25);
-      font-size: 25px;
+      box-shadow: none;
+      font-size: 20px;
       font-weight: 900;
     }
 
@@ -123,16 +109,16 @@
       margin: 0 0 5px;
       color: var(--brand);
       font-weight: 800;
-      font-size: 12px;
-      letter-spacing: .12em;
+      font-size: 11px;
+      letter-spacing: .10em;
       text-transform: uppercase;
     }
 
     h1 {
       margin: 0;
-      font-size: clamp(28px, 2.7vw, 42px);
-      line-height: 1.02;
-      letter-spacing: -0.05em;
+      font-size: clamp(24px, 2.2vw, 36px);
+      line-height: 1.08;
+      letter-spacing: 0;
     }
 
     .hero-copy {
@@ -151,7 +137,7 @@
       background: rgba(255,255,255,0.62);
       color: var(--muted);
       border-radius: 999px;
-      padding: 8px 12px;
+      padding: 6px 10px;
       font-size: 13px;
       font-weight: 700;
     }
@@ -159,50 +145,49 @@
 
     .btn {
       border: 1px solid rgba(148, 163, 184, 0.32);
-      border-radius: 16px;
-      padding: 11px 15px;
+      border-radius: 8px;
+      padding: 9px 12px;
       background: var(--panel-strong);
       color: var(--text);
       font-weight: 800;
-      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+      box-shadow: none;
       display: inline-flex;
       align-items: center;
       gap: 8px;
       transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease;
       white-space: nowrap;
     }
-    .btn:hover { transform: translateY(-1px); box-shadow: var(--shadow2); border-color: rgba(79, 70, 229, 0.42); }
+    .btn:hover { transform: translateY(-1px); box-shadow: var(--shadow2); border-color: rgba(37, 99, 235, 0.42); }
     .btn:active { transform: translateY(0); }
     .btn.primary { border-color: transparent; color: white; background: linear-gradient(135deg, #4f46e5, #06b6d4); }
     .btn.danger { color: var(--bad); }
     .btn.good { color: var(--good); }
-    .btn.small { padding: 8px 10px; border-radius: 12px; font-size: 13px; }
+    .btn.small { padding: 7px 9px; border-radius: 8px; font-size: 13px; }
     .btn.ghost { background: transparent; box-shadow: none; }
     .btn[disabled] { opacity: .55; cursor: not-allowed; transform: none; }
 
     .grid {
       display: grid;
-      grid-template-columns: minmax(360px, 0.92fr) minmax(420px, 1.08fr);
-      gap: 18px;
+      grid-template-columns: minmax(360px, 0.95fr) minmax(430px, 1.05fr);
+      gap: 14px;
       align-items: start;
     }
 
     .card {
       border: 1px solid rgba(148, 163, 184, 0.26);
       background: var(--panel);
-      backdrop-filter: blur(16px);
       border-radius: var(--radius);
       box-shadow: var(--shadow2);
-      padding: 18px;
-      margin-bottom: 18px;
+      padding: 16px;
+      margin-bottom: 14px;
       overflow: hidden;
     }
 
-    .section-title { justify-content: space-between; margin-bottom: 14px; }
+    .section-title { justify-content: space-between; margin-bottom: 12px; }
     .section-title h2 {
       margin: 0;
-      font-size: 18px;
-      letter-spacing: -0.02em;
+      font-size: 17px;
+      letter-spacing: 0;
       display: flex;
       align-items: center;
       gap: 9px;
@@ -214,7 +199,7 @@
       align-items: center;
       gap: 6px;
       border: 1px solid rgba(148, 163, 184, 0.30);
-      background: rgba(255,255,255,0.55);
+      background: rgba(255,255,255,0.70);
       color: var(--muted);
       border-radius: 999px;
       padding: 6px 10px;
@@ -231,15 +216,15 @@
     input, select, textarea {
       width: 100%;
       border: 1px solid rgba(148, 163, 184, 0.34);
-      background: rgba(255,255,255,0.72);
+      background: #ffffff;
       color: var(--text);
-      border-radius: 14px;
-      padding: 11px 12px;
+      border-radius: 8px;
+      padding: 10px 11px;
       outline: none;
       transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
     }
     [data-theme="dark"] input, [data-theme="dark"] select, [data-theme="dark"] textarea { background: rgba(15, 23, 42, 0.72); }
-    input:focus, select:focus, textarea:focus { border-color: rgba(79, 70, 229, .64); box-shadow: 0 0 0 4px rgba(79, 70, 229, .12); }
+    input:focus, select:focus, textarea:focus { border-color: rgba(37, 99, 235, .64); box-shadow: 0 0 0 3px rgba(37, 99, 235, .12); }
     textarea { min-height: 112px; resize: vertical; line-height: 1.48; }
     .mono { font-family: var(--mono); }
     .mini { font-size: 12px; color: var(--muted); line-height: 1.45; }
@@ -256,13 +241,13 @@
 
     details {
       border: 1px solid rgba(148, 163, 184, .24);
-      border-radius: 18px;
+      border-radius: 8px;
       background: rgba(148, 163, 184, .06);
       margin: 12px 0;
       overflow: hidden;
     }
     summary {
-      padding: 12px 14px;
+      padding: 11px 12px;
       cursor: pointer;
       font-weight: 900;
       color: var(--text);
@@ -273,9 +258,9 @@
 
     .smart-box {
       border: 1px solid rgba(79, 70, 229, .22);
-      background: linear-gradient(135deg, rgba(79,70,229,.10), rgba(6,182,212,.08));
-      border-radius: 20px;
-      padding: 14px;
+      background: rgba(37, 99, 235, .06);
+      border-radius: 8px;
+      padding: 12px;
       margin-top: 10px;
     }
     .smart-box h3 { margin: 0 0 8px; font-size: 14px; }
@@ -294,22 +279,22 @@
     }
     [data-theme="dark"] .token { background: rgba(15,23,42,.62); }
 
-    .tabs { display: flex; background: rgba(148, 163, 184, .14); padding: 5px; border-radius: 16px; gap: 5px; }
+    .tabs { display: flex; background: rgba(148, 163, 184, .14); padding: 4px; border-radius: 8px; gap: 4px; }
     .tab {
       flex: 1;
       border: 0;
       background: transparent;
       color: var(--muted);
       padding: 9px 10px;
-      border-radius: 12px;
+      border-radius: 6px;
       font-weight: 900;
     }
-    .tab.active { background: var(--panel-strong); color: var(--text); box-shadow: 0 8px 20px rgba(15,23,42,.08); }
+    .tab.active { background: var(--panel-strong); color: var(--text); box-shadow: 0 1px 3px rgba(15,23,42,.10); }
 
     .table-wrap {
       overflow: auto;
       border: 1px solid rgba(148, 163, 184, .26);
-      border-radius: 18px;
+      border-radius: 8px;
       background: rgba(255,255,255,.48);
       max-height: 520px;
     }
@@ -366,7 +351,7 @@
     .bulk-grid-editor {
       overflow: auto;
       border: 1px solid rgba(148, 163, 184, .26);
-      border-radius: 18px;
+      border-radius: 8px;
       background: rgba(255,255,255,.48);
       max-height: 340px;
     }
@@ -391,13 +376,13 @@
       font-family: var(--mono);
     }
     .bulk-grid-editor input:focus {
-      box-shadow: inset 0 0 0 2px rgba(79, 70, 229, .40);
+      box-shadow: inset 0 0 0 2px rgba(37, 99, 235, .40);
       background: rgba(255,255,255,.72);
     }
     [data-theme="dark"] .bulk-grid-editor input:focus { background: rgba(15,23,42,.72); }
     .run-validation {
       border: 1px solid rgba(148, 163, 184, .26);
-      border-radius: 18px;
+      border-radius: 8px;
       background: rgba(148, 163, 184, .06);
       padding: 12px;
       margin-bottom: 12px;
@@ -420,7 +405,7 @@
     .bar {
       height: 100%;
       width: 0%;
-      background: linear-gradient(90deg, #4f46e5, #06b6d4);
+      background: linear-gradient(90deg, var(--brand), var(--brand2));
       border-radius: inherit;
       transition: width .22s ease;
     }
@@ -438,7 +423,7 @@
       border: 1px solid rgba(148, 163, 184, .28);
       background: var(--panel-strong);
       color: var(--text);
-      border-radius: 18px;
+      border-radius: 8px;
       box-shadow: var(--shadow);
       padding: 13px 14px;
       animation: slideIn .2s ease both;
@@ -463,14 +448,14 @@
       overflow: auto;
       border: 1px solid rgba(148, 163, 184, .30);
       background: var(--panel-strong);
-      border-radius: 28px;
+      border-radius: 8px;
       box-shadow: var(--shadow);
       padding: 18px;
     }
     .modal pre {
       overflow: auto;
       padding: 14px;
-      border-radius: 18px;
+      border-radius: 8px;
       border: 1px solid rgba(148,163,184,.24);
       background: rgba(148, 163, 184, .10);
       line-height: 1.5;
@@ -478,7 +463,7 @@
 
     .empty {
       border: 1px dashed rgba(148, 163, 184, .42);
-      border-radius: 18px;
+      border-radius: 8px;
       padding: 18px;
       color: var(--muted);
       text-align: center;
@@ -496,20 +481,38 @@
     .hide { display: none !important; }
     .spacer { flex: 1 1 auto; }
 
-    @media (max-width: 1040px) {
+    @media (max-width: 1180px) {
       .grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 900px) {
       .method-url, .two, .three { grid-template-columns: 1fr; }
+      .hero-top { align-items: flex-start; }
+      .section-title { align-items: flex-start; }
+      .result-actions select { flex: 1 1 100%; }
     }
     @media (max-width: 640px) {
-      .app-shell { width: min(100% - 18px, 1500px); padding-top: 10px; }
-      .hero { padding: 18px; border-radius: 24px; }
+      .app-shell { width: min(100% - 16px, 1500px); padding-top: 8px; padding-bottom: 28px; }
+      .hero { padding: 14px; border-radius: 8px; }
+      .hero-top { gap: 10px; }
+      .hero-copy { font-size: 14px; }
+      .pill-row { display: none; }
       .brand-lockup { align-items: flex-start; }
-      .logo { width: 46px; height: 46px; border-radius: 15px; }
-      .card { padding: 14px; border-radius: 20px; }
+      .logo { width: 38px; height: 38px; border-radius: 8px; font-size: 17px; }
+      h1 { font-size: 24px; line-height: 1.12; }
+      .card { padding: 12px; border-radius: 8px; margin-bottom: 10px; }
+      .section-title h2 { font-size: 16px; }
+      .tabs { overflow-x: auto; }
+      .tab { min-width: 120px; }
       .mapping-row { grid-template-columns: 1fr; }
       .request-map-row { grid-template-columns: 1fr; }
       .mapping-row .btn { justify-content: center; }
-      .toolbar .btn, .result-actions .btn { flex: 1 1 auto; justify-content: center; }
+      .toolbar .btn, .result-actions .btn, .template-row .btn, .grid-tools .btn { flex: 1 1 auto; justify-content: center; }
+      .template-row select, .select-row select { flex: 1 1 100%; }
+      .bulk-grid-editor { max-height: 280px; }
+      .bulk-grid-editor input { min-width: 128px; }
+      table { min-width: 640px; }
+      .toast { right: 8px; bottom: 8px; width: calc(100% - 16px); }
+      .modal { padding: 12px; }
     }
   </style>
 </head>
@@ -525,7 +528,7 @@
           </div>
         </div>
         <div class="toolbar">
-          <button class="btn" id="themeBtn" type="button">🌙 Theme</button>
+          <button class="btn" id="themeBtn" type="button">Theme</button>
         </div>
       </div>
       <p class="hero-copy">
@@ -555,7 +558,7 @@
             <select id="runMode">
               <option value="demo">Demo / mock mode — no network, no CORS</option>
               <option value="direct">Browser direct — works only with CORS-enabled APIs</option>
-              <option value="proxy">Proxy endpoint — send through your own backend/local agent</option>
+              <option value="proxy" id="proxyModeOption">Proxy endpoint — send through your own backend/local agent</option>
             </select>
           </div>
 
@@ -574,19 +577,19 @@
                 <input id="proxyUrl" class="mono" placeholder="http://127.0.0.1:8787/request" />
               </div>
               <div class="field">
-                <label for="proxyToken">Agent token</label>
-                <input id="proxyToken" class="mono" placeholder="Paste token printed by local-agent.js" autocomplete="off" />
+                <label for="proxyToken">Proxy token</label>
+                <input id="proxyToken" class="mono" placeholder="Paste the backend/local agent token" autocomplete="off" />
               </div>
             </div>
             <div class="toolbar">
-              <button class="btn small" id="fillLocalAgentBtn" type="button">⚙ Use Local Agent Defaults</button>
+              <button class="btn small" id="fillLocalAgentBtn" type="button">Use Local Defaults</button>
               <button class="btn small good" id="testProxyBtn" type="button">✓ Test Agent</button>
             </div>
             <div class="smart-box" id="agentStatusBox" style="margin-top: 12px;">
               <h3>Local Agent / Proxy Status</h3>
-              <div id="agentStatus" class="mini">Not tested yet. Run the included Node local agent, paste its token, then test the connection.</div>
+              <div id="agentStatus" class="mini">Not tested yet. Start the Node local agent or FastAPI proxy, paste its token, then test the connection.</div>
             </div>
-            <div class="mini" style="margin-top: 8px;">The included local agent accepts JSON fields: method, url, headers, body, timeoutMs. It adds CORS headers for this UI and forwards requests from your computer.</div>
+            <div class="mini" style="margin-top: 8px;">Backend proxy adapters accept JSON fields: method, url, headers, body, timeoutMs. They add CORS headers for this UI and forward requests from your environment.</div>
           </div>
 
           <div class="method-url field">
@@ -713,8 +716,8 @@
           </div>
 
           <div class="toolbar">
-            <button class="btn" id="parseBtn" type="button">🔍 Parse & Match</button>
-            <button class="btn" id="sampleRowsBtn" type="button">🧪 Add Sample Rows</button>
+            <button class="btn" id="parseBtn" type="button">Parse & Match</button>
+            <button class="btn" id="sampleRowsBtn" type="button">Add Sample Rows</button>
             <button class="btn ghost" id="clearRowsBtn" type="button">Clear</button>
           </div>
 
@@ -765,8 +768,8 @@
           </div>
           <div class="run-validation" id="runValidation"></div>
           <div class="toolbar">
-            <button class="btn primary" id="runBtn" type="button">▶ Run Bulk Requests</button>
-            <button class="btn" id="testBtn" type="button">⚡ Test First Row</button>
+            <button class="btn primary" id="runBtn" type="button">Run Bulk Requests</button>
+            <button class="btn" id="testBtn" type="button">Test First Row</button>
             <button class="btn danger" id="stopBtn" type="button" disabled>■ Stop</button>
           </div>
         </section>
@@ -783,7 +786,7 @@
           </div>
 
           <div class="mapping-actions">
-            <button class="btn" id="autoMapBtn" type="button">✨ Auto-map from Sample</button>
+            <button class="btn" id="autoMapBtn" type="button">Auto-map from Sample</button>
             <button class="btn" id="addMapBtn" type="button">+ Add Field</button>
             <button class="btn ghost" id="clearMapBtn" type="button">Clear Mapping</button>
           </div>
@@ -800,7 +803,7 @@
           </details>
         </section>
 
-        <section class="card">
+        <section class="card" id="resultsSection">
           <div class="section-title">
             <div>
               <h2>5. Results</h2>
@@ -823,10 +826,10 @@
               <option value="failed">Show failed only</option>
             </select>
             <button class="btn" id="retryFailedBtn" type="button">Retry Failed</button>
-            <button class="btn" id="exportCsvBtn" type="button">⬇ Export Mapped CSV</button>
-            <button class="btn" id="exportMappedJsonBtn" type="button">⬇ Export Mapped JSON</button>
-            <button class="btn" id="exportJsonBtn" type="button">⬇ Export Raw JSON</button>
-            <button class="btn" id="copyCsvBtn" type="button">📋 Copy CSV</button>
+            <button class="btn" id="exportCsvBtn" type="button">Export Mapped CSV</button>
+            <button class="btn" id="exportMappedJsonBtn" type="button">Export Mapped JSON</button>
+            <button class="btn" id="exportJsonBtn" type="button">Export Raw JSON</button>
+            <button class="btn" id="copyCsvBtn" type="button">Copy CSV</button>
             <button class="btn ghost" id="clearResultsBtn" type="button">Clear Results</button>
           </div>
 
@@ -844,13 +847,13 @@
           </div>
           <div class="template-row">
             <select id="templateSelect" style="flex: 1 1 220px;"></select>
-            <button class="btn" id="saveTemplateBtn" type="button">💾 Save</button>
+            <button class="btn" id="saveTemplateBtn" type="button">Save</button>
             <button class="btn" id="loadTemplateBtn" type="button">Load</button>
             <button class="btn danger" id="deleteTemplateBtn" type="button">Delete</button>
           </div>
           <div class="toolbar" style="margin-top: 12px;">
-            <button class="btn" id="exportLibraryBtn" type="button">⬇ Export Library</button>
-            <button class="btn" id="importLibraryBtn" type="button">⬆ Import Library</button>
+            <button class="btn" id="exportLibraryBtn" type="button">Export Library</button>
+            <button class="btn" id="importLibraryBtn" type="button">Import Library</button>
             <input id="importLibraryFile" type="file" accept="application/json,.json" class="hide" />
           </div>
         </section>
@@ -861,14 +864,22 @@
               <h2>CORS / Privacy Notes</h2>
             </div>
           </div>
-          <p class="mini">
+          <p class="mini" id="corsPrivacyText">
             Browser direct mode cannot bypass CORS. If an API blocks browser requests, use Local Agent / Proxy mode. API keys entered here stay in your browser until you run a request; in Local Agent mode they are sent only to the local agent on your computer and then forwarded to the target API.
           </p>
-          <details style="margin-top: 12px;">
-            <summary>How to run the included local agent</summary>
+          <div class="smart-box" id="upgradeProxyNote" style="margin-top: 12px;">
+            <h3>Need backend/proxy support?</h3>
+            <p class="mini" id="upgradeProxyText" style="margin: 0;"></p>
+          </div>
+          <details id="localAgentHelp" class="hide" style="margin-top: 12px;">
+            <summary>Backend proxy setup</summary>
             <div class="detail-body">
               <pre class="mono" style="white-space: pre-wrap;">node local-agent.js</pre>
-              <p class="mini">The terminal prints a token. Paste that token into the Agent token field above. Default endpoint: <span class="mono">http://127.0.0.1:8787/request</span>.</p>
+              <pre class="mono" style="white-space: pre-wrap;">cd backend-examples/python-fastapi-proxy
+python -m venv .venv
+pip install -r requirements.txt
+uvicorn main:app --host 127.0.0.1 --port 8787</pre>
+              <p class="mini">Set or copy the proxy token, paste it into the Proxy token field above, then use the default endpoint: <span class="mono">http://127.0.0.1:8787/request</span>.</p>
             </div>
           </details>
         </section>
@@ -898,6 +909,11 @@
       'use strict';
 
       const $ = (id) => document.getElementById(id);
+      const appConfig = {
+        enableProxyMode: false,
+        fullVersionUrl: ''
+      };
+
       const state = {
         variables: [],
         rows: [],
@@ -1042,6 +1058,7 @@
         controls.forEach(id => {
           if ($(id) && Object.prototype.hasOwnProperty.call(cfg, id)) $(id).value = cfg[id];
         });
+        if (!appConfig.enableProxyMode && $('runMode').value === 'proxy') $('runMode').value = 'direct';
         updateAuthFields();
         Object.entries(cfg.authFields || {}).forEach(([id, value]) => {
           if ($(id)) $(id).value = value;
@@ -1367,12 +1384,29 @@
       }
 
       function updateModeUI() {
+        configureProxyAvailability();
         const mode = $('runMode').value;
         $('proxyField').classList.toggle('hide', mode !== 'proxy');
+        $('localAgentHelp').classList.toggle('hide', mode !== 'proxy' || !appConfig.enableProxyMode);
         $('demoSampleField').classList.toggle('hide', mode !== 'demo');
         $('modeBadge').textContent = mode === 'demo' ? 'Demo mode' : mode === 'proxy' ? 'Local Agent / Proxy mode' : 'Browser mode';
         $('modeBadge').className = 'badge ' + (mode === 'direct' ? 'warn' : mode === 'proxy' ? 'good' : '');
+        $('corsPrivacyText').textContent = appConfig.enableProxyMode
+          ? 'Browser direct mode cannot bypass CORS. If an API blocks browser requests, use Local Agent / Proxy mode. API keys entered here stay in your browser until you run a request; in Local Agent mode they are sent only to the local agent on your computer and then forwarded to the target API.'
+          : 'Browser direct mode cannot bypass CORS. In this browser-only build, use Demo mode or APIs that allow browser requests from this page.';
+        $('upgradeProxyNote').classList.toggle('hide', appConfig.enableProxyMode);
+        $('upgradeProxyText').innerHTML = appConfig.fullVersionUrl
+          ? `The browser-only version cannot bypass CORS. <a href="${escapeHtml(appConfig.fullVersionUrl)}" target="_blank" rel="noopener">Upgrade to the full version</a> for backend/proxy support with private APIs, internal services, and APIs that require server-side calls.`
+          : 'The browser-only version cannot bypass CORS. Upgrade to the full version for backend/proxy support with private APIs, internal services, and APIs that require server-side calls.';
         renderRunValidation();
+      }
+
+      function configureProxyAvailability() {
+        const option = $('proxyModeOption');
+        if (!option) return;
+        option.disabled = !appConfig.enableProxyMode;
+        option.hidden = !appConfig.enableProxyMode;
+        if (!appConfig.enableProxyMode && $('runMode').value === 'proxy') $('runMode').value = 'direct';
       }
 
       function localAgentHeaders() {
@@ -1394,6 +1428,10 @@
       }
 
       function fillLocalAgentDefaults() {
+        if (!appConfig.enableProxyMode) {
+          toast('Proxy mode is disabled in this browser-only build.', 'bad');
+          return;
+        }
         $('runMode').value = 'proxy';
         $('proxyUrl').value = 'http://127.0.0.1:8787/request';
         updateModeUI();
@@ -2079,6 +2117,10 @@
         $('modalBackdrop').classList.add('show');
       }
 
+      function scrollToResults() {
+        $('resultsSection')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
       function setRunning(isRunning) {
         state.running = isRunning;
         $('testBtn').disabled = isRunning;
@@ -2173,9 +2215,11 @@
           } else {
             toast('Test completed, but no JSON response was available to map.', first?.error ? 'bad' : 'info');
           }
+          scrollToResults();
         } else {
           const ok = state.results.filter(r => r.status >= 200 && r.status < 300).length;
           toast(`Run complete: ${ok}/${state.results.length} successful.`, ok ? 'good' : 'bad');
+          scrollToResults();
         }
       }
 
@@ -2216,6 +2260,7 @@
         }
         setRunning(false);
         toast('Retry complete.', 'good');
+        scrollToResults();
       }
 
       function maskSensitiveHeaders(headers = {}) {
@@ -2483,6 +2528,7 @@
       const saveSettingsDebounced = debounce(saveSettings, 350);
 
       function init() {
+        configureProxyAvailability();
         renderDemoSelect();
         bindEvents();
         updateAuthFields();

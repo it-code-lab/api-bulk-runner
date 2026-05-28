@@ -6,6 +6,18 @@ This package includes:
 - `local-agent.js` — zero-dependency Node.js local agent for APIs that block browser CORS.
 - `package.json` — optional Node start script.
 - `api-proxy.php` — optional hosted PHP proxy for trusted/private use.
+- `backend-examples/` — optional backend proxy examples for full/private builds, starting with Python FastAPI.
+
+## Quick Start
+
+For normal browser-only use, no installation is required.
+
+1. Download or unzip this folder.
+2. Open `index.html` in Chrome, Edge, Firefox, or Safari.
+3. Start with Demo mode.
+4. For real APIs, use Browser Direct mode with APIs that allow browser/CORS requests.
+
+No Node.js, npm install, server, or database is required for the browser-only build.
 
 ## Application features
 
@@ -17,13 +29,23 @@ This package includes:
 - Bulk run templates are stored locally in the browser.
 - The template library can be exported/imported as JSON to move between systems.
 
+## User Guide
+
+See [`docs/user-guide.md`](docs/user-guide.md) for setup, usage, workflows, template handling, exports, privacy notes, and troubleshooting.
+
+## Selling on Gumroad
+
+See [`docs/gumroad-selling-guide.md`](docs/gumroad-selling-guide.md) for seller setup, product listing copy, buyer instructions, license-key configuration, and a launch checklist.
+
 ## Browser-only mode
 
 Upload `index.html` as your ReaderNook Lab app page. Browser Direct mode works only when the target API allows CORS requests from your site.
 
-## Local Agent mode
+Proxy / Local Agent mode is disabled in the browser-only build. To enable it for a backend/private product build, set `appConfig.enableProxyMode` to `true` in `index.html`.
 
-Use this when the API blocks browser requests or is available only from your computer/network.
+## Optional Local Agent mode
+
+Use this only for a backend/private build where Proxy / Local Agent mode is enabled. The browser-only build disables this mode by default.
 
 Requirements: Node.js 18+
 
@@ -74,6 +96,25 @@ $PROXY_TOKEN = getenv('PROXY_TOKEN') ?: 'CHANGE_ME_TO_A_LONG_RANDOM_TOKEN';
 ```
 
 Then use the PHP file URL as the app's proxy endpoint and paste the same token.
+
+## Python FastAPI proxy mode
+
+For a Python-based full/private product build, use:
+
+```text
+backend-examples/python-fastapi-proxy/
+```
+
+Quick start:
+
+```bash
+cd backend-examples/python-fastapi-proxy
+python -m venv .venv
+pip install -r requirements.txt
+uvicorn main:app --host 127.0.0.1 --port 8787
+```
+
+Set `PROXY_TOKEN` before starting the server, then use `http://127.0.0.1:8787/request` as the app's proxy endpoint. See [`backend-examples/python-fastapi-proxy/README.md`](backend-examples/python-fastapi-proxy/README.md) for the full setup.
 
 ## Security notes
 
