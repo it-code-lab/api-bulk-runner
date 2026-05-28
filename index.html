@@ -201,6 +201,12 @@
     }
     [data-theme="dark"] .workflow-step { background: rgba(15,23,42,.52); }
     .workflow-step:hover { border-color: rgba(37, 99, 235, .42); }
+    .workflow-step.active {
+      background: rgba(37, 99, 235, .10);
+      border-color: rgba(37, 99, 235, .62);
+      box-shadow: inset 0 0 0 1px rgba(37, 99, 235, .18);
+    }
+    .workflow-step.active .workflow-step-label { color: var(--brand); }
     .workflow-step-label {
       display: block;
       font-size: 12px;
@@ -1188,6 +1194,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         templateSelection: null,
         templateSearch: '',
         templateCollapsed: {},
+        activeWorkflowStep: 'request',
         sectionCollapsed: {
           request: false,
           bulk: true,
@@ -1411,6 +1418,44 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         renderWorkflowStatus();
       }
 
+      function setActiveWorkflowStep(key) {
+        if (!key || state.activeWorkflowStep === key) return;
+        state.activeWorkflowStep = key;
+        renderWorkflowStatus();
+      }
+
+      function observeWorkflowSections() {
+        const sections = [...document.querySelectorAll('.flow-section[data-section]')];
+        if (!sections.length) return;
+        if (!('IntersectionObserver' in window)) {
+          const onScroll = () => {
+            const targetTop = 140;
+            const closest = sections
+              .map(section => ({ key: section.dataset.section, distance: Math.abs(section.getBoundingClientRect().top - targetTop) }))
+              .sort((a, b) => a.distance - b.distance)[0];
+            if (closest) setActiveWorkflowStep(closest.key);
+          };
+          window.addEventListener('scroll', onScroll, { passive: true });
+          onScroll();
+          return;
+        }
+        const visible = new Map();
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            const key = entry.target.dataset.section;
+            if (!key) return;
+            if (entry.isIntersecting) visible.set(key, entry.boundingClientRect.top);
+            else visible.delete(key);
+          });
+          if (!visible.size) return;
+          const next = [...visible.entries()]
+            .map(([key, top]) => ({ key, distance: Math.abs(top - 140) }))
+            .sort((a, b) => a.distance - b.distance)[0];
+          if (next) setActiveWorkflowStep(next.key);
+        }, { root: null, rootMargin: '-120px 0px -55% 0px', threshold: [0, .01, .2, .6] });
+        sections.forEach(section => observer.observe(section));
+      }
+
       function updateWorkflowSections() {
         autoUpdateWorkflowSections();
         renderWorkflowSections();
@@ -1469,8 +1514,9 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         if (!target) return;
         target.innerHTML = workflowSteps.map(step => {
           const status = workflowStatus(step.key);
+          const active = state.activeWorkflowStep === step.key ? ' active' : '';
           return `
-            <button class="workflow-step ${escapeHtml(status.tone)}" type="button" data-step="${escapeHtml(step.key)}">
+            <button class="workflow-step ${escapeHtml(status.tone)}${active}" type="button" data-step="${escapeHtml(step.key)}">
               <span class="workflow-step-label">${escapeHtml(step.label)}</span>
               <span class="workflow-step-status">${escapeHtml(status.label)}</span>
             </button>
@@ -3564,6 +3610,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         renderResults();
         updateModeUI();
         updateWorkflowSections();
+        observeWorkflowSections();
       }
 
       init();
