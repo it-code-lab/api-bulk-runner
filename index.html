@@ -279,6 +279,14 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+    .run-header-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .run-header-actions.hide-actions { display: none; }
 
     .badge {
       display: inline-flex;
@@ -712,7 +720,7 @@
       .mapping-row { grid-template-columns: 1fr; }
       .request-map-row { grid-template-columns: 1fr; }
       .mapping-row .btn { justify-content: center; }
-      .toolbar .btn, .result-actions .btn, .template-row .btn, .template-actions .btn, .template-detail-actions .btn, .grid-tools .btn { flex: 1 1 auto; justify-content: center; }
+      .toolbar .btn, .result-actions .btn, .template-row .btn, .template-actions .btn, .template-detail-actions .btn, .grid-tools .btn, .run-header-actions .btn { flex: 1 1 auto; justify-content: center; }
       .template-row select, .template-actions input, .select-row select { flex: 1 1 100%; }
       .template-tree { max-height: 320px; }
       .bulk-grid-editor { max-height: 280px; }
@@ -967,13 +975,13 @@
               <h2>3. Run</h2>
               <p>Review readiness, test one row, then run the request set.</p>
             </div>
+            <div class="run-header-actions hide-actions" id="runHeaderActions">
+              <button class="btn" id="testBtn" type="button">Test First Row</button>
+              <button class="btn primary" id="runBtn" type="button">Run</button>
+              <button class="btn danger" id="stopBtn" type="button" disabled>■ Stop</button>
+            </div>
           </div>
           <div class="run-validation" id="runValidation"></div>
-          <div class="toolbar">
-            <button class="btn primary" id="runBtn" type="button">Run</button>
-            <button class="btn" id="testBtn" type="button">Test First Row</button>
-            <button class="btn danger" id="stopBtn" type="button" disabled>■ Stop</button>
-          </div>
           <details style="margin-top: 12px;">
             <summary>Run options</summary>
             <div class="detail-body">
@@ -1210,6 +1218,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         'runMode', 'proxyUrl', 'proxyToken', 'method', 'url', 'params', 'authType', 'contentType', 'headers', 'body',
         'bulkInput', 'firstRowMode', 'singleColumnVar', 'concurrency', 'delayMs', 'timeoutMs', 'retries', 'saveRaw'
       ];
+      const requestControlIds = new Set(['method', 'url', 'params', 'authType', 'contentType', 'headers', 'body']);
 
       const demoScenarios = {
         customerLookup: {
@@ -1338,6 +1347,13 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         updateWorkflowSections();
       }
 
+      function leaveDemoModeForCustomRequest() {
+        if ($('runMode')?.value !== 'demo') return;
+        $('runMode').value = 'direct';
+        updateModeUI();
+        toast('Switched to Browser Direct because Demo mode uses mock responses and does not call custom URLs.', 'info');
+      }
+
       function initializeWorkflowSections() {
         document.querySelectorAll('.flow-section').forEach(section => {
           const key = section.dataset.section;
@@ -1429,7 +1445,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         }
         if (key === 'results') {
           if (state.running) return { label: 'Running', tone: 'warn' };
-          if (state.results.length) return { label: `${state.results.length} done`, tone: 'good' };
+          if (state.results.length) return { label: `${resultRowCount()} row${resultRowCount() === 1 ? '' : 's'}`, tone: 'good' };
           return { label: 'Not run', tone: 'neutral' };
         }
         if (key === 'template') {
@@ -1915,7 +1931,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         $('authFields').innerHTML = html;
         ['bearerToken', 'apiKeyName', 'apiKeyValue', 'basicUser', 'basicPass'].forEach(id => {
           const el = $(id);
-          if (el) el.addEventListener('input', () => { detectVariables(); saveSettingsDebounced(); });
+          if (el) el.addEventListener('input', () => { leaveDemoModeForCustomRequest(); detectVariables(); saveSettingsDebounced(); });
         });
       }
 
@@ -2440,7 +2456,13 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
             ${missing.length ? `<span class="badge bad">Missing ${missing.map(v => escapeHtml(v)).join(', ')}</span>` : ''}
           </div>
         `;
+        const actions = $('runHeaderActions');
+        if (actions) actions.classList.toggle('hide-actions', !state.running && !canRun);
+        $('runBtn').classList.toggle('hide', state.running);
+        $('testBtn').classList.toggle('hide', state.running);
+        $('stopBtn').classList.toggle('hide', !state.running);
         $('runBtn').disabled = state.running || !canRun;
+        $('testBtn').disabled = state.running || !canRun;
         updateWorkflowSections();
       }
 
@@ -2701,7 +2723,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
           if (!value.length) {
             out.push({ path: prefix, value: [] });
           } else {
-            flattenJson(value[0], `${prefix}[0]`, out);
+            flattenJson(value[0], `${prefix}[]`, out);
           }
           return out;
         }
@@ -2726,7 +2748,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
       function scorePath(item) {
         const p = item.path.toLowerCase();
         let score = 0;
-        ['customer', 'name', 'status', 'email', 'segment', 'balance', 'amount', 'score', 'phone', 'id', 'number', 'code', 'message'].forEach((term, idx) => {
+        ['customer', 'name', 'status', 'email', 'company', 'username', 'phone', 'photo', 'url', 'address', 'zip', 'state', 'country', 'segment', 'balance', 'amount', 'score', 'id', 'number', 'code', 'message'].forEach((term, idx) => {
           if (p.includes(term)) score += 20 - idx;
         });
         if (p.includes('meta') || p.includes('request') || p.includes('trace')) score -= 10;
@@ -2744,8 +2766,8 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         state.discoveredPaths = discoverPaths(json);
         const selected = [...state.discoveredPaths]
           .sort((a, b) => scorePath(b) - scorePath(a))
-          .slice(0, 10)
-          .filter(item => scorePath(item) > -5);
+          .filter(item => scorePath(item) > -5)
+          .slice(0, 24);
         state.mappings = selected.map(item => ({ column: titleFromPath(item.path), path: item.path }));
         renderMappings();
         renderSampleResponse();
@@ -2768,6 +2790,13 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         renderMappings();
       }
 
+      function renderMappingPreview() {
+        $('mappingPreview').innerHTML = `
+          <h3>Mapped columns</h3>
+          <div class="smart-list">${state.mappings.map(m => `<span class="token">${escapeHtml(m.column || m.path)}</span>`).join('')}</div>
+        `;
+      }
+
       function renderMappings() {
         $('mappingBadge').textContent = `${state.mappings.length} field${state.mappings.length === 1 ? '' : 's'}`;
         if (!state.mappings.length) {
@@ -2785,17 +2814,18 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
             <button class="btn small danger" type="button" data-map-del="${idx}" title="Remove">×</button>
           </div>
         `).join('');
-        $('mappingPreview').innerHTML = `
-          <h3>Mapped columns</h3>
-          <div class="smart-list">${state.mappings.map(m => `<span class="token">${escapeHtml(m.column || m.path)}</span>`).join('')}</div>
-        `;
+        renderMappingPreview();
         document.querySelectorAll('[data-map-col]').forEach(input => input.addEventListener('input', () => {
           state.mappings[Number(input.dataset.mapCol)].column = input.value;
+          renderMappingPreview();
           renderRunValidation();
           saveSettingsDebounced();
         }));
         document.querySelectorAll('[data-map-path]').forEach(input => input.addEventListener('input', () => {
-          state.mappings[Number(input.dataset.mapPath)].path = input.value;
+          const idx = Number(input.dataset.mapPath);
+          state.mappings[idx].path = input.value;
+          input.closest('.mapping-row')?.querySelector('.mapping-health')?.replaceChildren(statusElementForMapping(state.mappings[idx]));
+          renderMappingPreview();
           renderRunValidation();
           saveSettingsDebounced();
         }));
@@ -2809,10 +2839,24 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
       }
 
       function mappingStatusHtml(mapping) {
-        if (!state.sampleJson) return '<span class="badge">No sample</span>';
-        const value = getPath(state.sampleJson, mapping.path);
+        return statusElementForMapping(mapping).outerHTML;
+      }
+
+      function statusElementForMapping(mapping) {
+        const wrapper = document.createElement('span');
+        if (!state.sampleJson) {
+          wrapper.className = 'badge';
+          wrapper.textContent = 'No sample';
+          return wrapper;
+        }
+        let value = getPath(state.sampleJson, mapping.path);
+        if (value === '' && Array.isArray(state.sampleJson) && state.sampleJson.length) {
+          value = getPath(state.sampleJson[0], itemPathForArray(mapping.path));
+        }
         const hasValue = value !== '';
-        return `<span class="badge ${hasValue ? 'good' : 'bad'}">${hasValue ? 'Resolves' : 'Missing'}</span>`;
+        wrapper.className = `badge ${hasValue ? 'good' : 'bad'}`;
+        wrapper.textContent = hasValue ? 'Resolves' : 'Missing';
+        return wrapper;
       }
 
       function getPath(obj, path) {
@@ -2820,12 +2864,16 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         const clean = String(path).replace(/^\$\.?/, '');
         if (!clean) return obj;
         const parts = [];
-        clean.replace(/([^.[\]]+)|\[(\d+)\]/g, (_, key, idx) => {
-          parts.push(key !== undefined ? key : Number(idx));
+        clean.replace(/([^.[\]]+)|\[(\d*)\]/g, (_, key, idx) => {
+          parts.push(key !== undefined ? key : (idx === '' ? '[]' : Number(idx)));
         });
         let cur = obj;
         for (const part of parts) {
           if (cur === null || cur === undefined) return '';
+          if (part === '[]') {
+            if (Array.isArray(cur)) cur = cur[0];
+            continue;
+          }
           cur = cur[part];
         }
         if (cur === null || cur === undefined) return '';
@@ -2833,31 +2881,53 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         return cur;
       }
 
-      function resultToRow(result) {
+      function itemPathForArray(path) {
+        return String(path || '')
+          .replace(/^\$\[\]\.?/, '$.')
+          .replace(/^\$\[0\]\.?/, '$.')
+          .replace(/^\$\.$/, '$');
+      }
+
+      function resultToRow(result, item = null, itemIndex = null) {
+        const jsonSource = item === null ? result.json : item;
         const base = { ...result.input };
+        if (itemIndex !== null) base['Item'] = itemIndex + 1;
         base['HTTP Status'] = result.status || '';
         base['Duration ms'] = result.durationMs || '';
         base['Attempts'] = result.attempts || '';
         state.mappings.forEach(m => {
           const name = m.column || m.path;
-          base[name] = result.json ? getPath(result.json, m.path) : '';
+          const path = item === null ? m.path : itemPathForArray(m.path);
+          base[name] = jsonSource ? getPath(jsonSource, path) : '';
         });
         base['Error'] = result.error || (result.status >= 400 ? result.statusText : '') || '';
         return base;
       }
 
+      function resultToRows(result) {
+        if (Array.isArray(result.json) && result.json.length) {
+          return result.json.map((item, idx) => resultToRow(result, item, idx));
+        }
+        return [resultToRow(result)];
+      }
+
+      function resultRowCount() {
+        return state.results.reduce((sum, result) => sum + resultToRows(result).length, 0);
+      }
+
       function renderResults() {
         const total = state.rows.length || state.results.length || 0;
         const done = state.results.length;
+        const tableRowCount = resultRowCount();
         const success = state.results.filter(r => r.status >= 200 && r.status < 300).length;
         const failed = state.results.filter(r => r.error || r.status >= 400).length;
         const avg = done ? Math.round(state.results.reduce((sum, r) => sum + (r.durationMs || 0), 0) / done) : 0;
-        $('doneBadge').textContent = `${done} done`;
+        $('doneBadge').textContent = `${done} request${done === 1 ? '' : 's'}`;
         $('successBadge').textContent = `${success} success`;
         $('failBadge').textContent = `${failed} failed`;
         $('avgBadge').textContent = `${avg} ms avg`;
         $('progressBar').style.width = total ? `${Math.min(100, Math.round(done / total * 100))}%` : '0%';
-        $('resultBadge').textContent = state.running ? 'Running' : (done ? 'Complete' : 'Idle');
+        $('resultBadge').textContent = state.running ? 'Running' : (done ? `${tableRowCount} row${tableRowCount === 1 ? '' : 's'}` : 'Idle');
         $('resultBadge').className = 'badge ' + (state.running ? 'warn' : done ? 'good' : '');
         updateWorkflowSections();
 
@@ -2874,16 +2944,19 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
           return;
         }
 
-        const rows = visibleResults.map(item => resultToRow(item.result));
+        const visibleRows = visibleResults.flatMap(item =>
+          resultToRows(item.result).map((row, itemIndex) => ({ row, resultIndex: item.index, itemIndex }))
+        );
+        const rows = visibleRows.map(item => item.row);
         const cols = unique(rows.flatMap(row => Object.keys(row)));
         const html = `
           <div class="table-wrap">
             <table>
               <thead><tr>${cols.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead>
-              <tbody>${rows.map((row, idx) => `
-                <tr data-result-row="${visibleResults[idx].index}" title="Click for raw response">
+              <tbody>${visibleRows.map(item => `
+                <tr data-result-row="${item.resultIndex}" data-result-item="${item.itemIndex}" title="Click for raw response">
                   ${cols.map(c => {
-                    const val = row[c] ?? '';
+                    const val = item.row[c] ?? '';
                     const cls = c === 'HTTP Status'
                       ? (Number(val) >= 200 && Number(val) < 300 ? 'status-ok' : Number(val) >= 400 ? 'status-bad' : 'status-warn')
                       : (String(val).length > 50 ? 'truncate' : '');
@@ -2894,14 +2967,15 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
             </table>
           </div>`;
         $('resultsTable').innerHTML = html;
-        document.querySelectorAll('[data-result-row]').forEach(row => row.addEventListener('click', () => openResultModal(Number(row.dataset.resultRow))));
+        document.querySelectorAll('[data-result-row]').forEach(row => row.addEventListener('click', () => openResultModal(Number(row.dataset.resultRow), Number(row.dataset.resultItem))));
       }
 
-      function openResultModal(index) {
+      function openResultModal(index, itemIndex = 0) {
         const r = state.results[index];
         if (!r) return;
-        $('modalSubtitle').textContent = `Status ${r.status || 'n/a'} · ${r.durationMs || 0} ms · Row ${index + 1}`;
-        $('modalContent').textContent = JSON.stringify({ input: r.input, request: r.request, mapped: resultToRow(r), response: r.rawSaved ?? r.text ?? r.json, error: r.error }, null, 2);
+        const responseItem = Array.isArray(r.json) ? r.json[itemIndex] : (r.rawSaved ?? r.text ?? r.json);
+        $('modalSubtitle').textContent = `Status ${r.status || 'n/a'} · ${r.durationMs || 0} ms · Row ${index + 1}${Array.isArray(r.json) ? ` · Item ${itemIndex + 1}` : ''}`;
+        $('modalContent').textContent = JSON.stringify({ input: r.input, request: r.request, mapped: resultToRows(r)[itemIndex] || resultToRow(r), response: responseItem, error: r.error }, null, 2);
         $('modalBackdrop').classList.add('show');
       }
 
@@ -3095,7 +3169,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
           toast('No results to export yet.', 'bad');
           return;
         }
-        const rows = state.results.map(resultToRow);
+        const rows = state.results.flatMap(resultToRows);
         const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
         if (format === 'csv') download(`api-bulk-results-${stamp}.csv`, toCsv(rows), 'text/csv');
         else if (format === 'mappedJson') download(`api-bulk-results-mapped-${stamp}.json`, JSON.stringify(rows, null, 2), 'application/json');
@@ -3104,7 +3178,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
 
       async function copyCsv() {
         if (!state.results.length) return toast('No results to copy yet.', 'bad');
-        const csv = toCsv(state.results.map(resultToRow));
+        const csv = toCsv(state.results.flatMap(resultToRows));
         try {
           await navigator.clipboard.writeText(csv);
           toast('CSV copied to clipboard.', 'good');
@@ -3366,8 +3440,8 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         controls.forEach(id => {
           const el = $(id);
           if (!el) return;
-          el.addEventListener('input', () => { detectVariables(); saveSettingsDebounced(); });
-          el.addEventListener('change', () => { detectVariables(); saveSettingsDebounced(); });
+          el.addEventListener('input', () => { if (requestControlIds.has(id)) leaveDemoModeForCustomRequest(); detectVariables(); saveSettingsDebounced(); });
+          el.addEventListener('change', () => { if (requestControlIds.has(id)) leaveDemoModeForCustomRequest(); detectVariables(); saveSettingsDebounced(); });
         });
         $('authType').addEventListener('change', () => { updateAuthFields(); detectVariables(); saveSettings(); });
         $('runMode').addEventListener('change', () => { updateModeUI(); saveSettings(); });
