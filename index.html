@@ -102,13 +102,13 @@
       background: linear-gradient(135deg, #4f46e5, #06b6d4);
       box-shadow: none;
       font-size: 20px;
-      font-weight: 900;
+      font-weight: 800;
     }
 
     .eyebrow {
       margin: 0 0 5px;
       color: var(--brand);
-      font-weight: 800;
+      font-weight: 700;
       font-size: 11px;
       letter-spacing: .10em;
       text-transform: uppercase;
@@ -149,7 +149,7 @@
       padding: 9px 12px;
       background: var(--panel-strong);
       color: var(--text);
-      font-weight: 800;
+      font-weight: 700;
       box-shadow: none;
       display: inline-flex;
       align-items: center;
@@ -168,10 +168,64 @@
 
     .grid {
       display: grid;
-      grid-template-columns: minmax(360px, 0.95fr) minmax(430px, 1.05fr);
+      grid-template-columns: minmax(340px, 1fr) minmax(340px, 1fr);
       gap: 14px;
       align-items: start;
     }
+    .grid > div { display: contents; }
+    .workflow-stepper {
+      position: sticky;
+      top: 8px;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow-x: auto;
+      border: 1px solid rgba(148, 163, 184, 0.26);
+      background: var(--panel-strong);
+      backdrop-filter: blur(12px);
+      border-radius: 8px;
+      box-shadow: var(--shadow2);
+      padding: 8px;
+      margin: -4px 0 14px;
+    }
+    .workflow-step {
+      flex: 0 0 auto;
+      border: 1px solid rgba(148, 163, 184, .28);
+      background: rgba(255,255,255,.52);
+      color: var(--text);
+      border-radius: 8px;
+      min-width: 150px;
+      padding: 8px 9px;
+      text-align: left;
+    }
+    [data-theme="dark"] .workflow-step { background: rgba(15,23,42,.52); }
+    .workflow-step:hover { border-color: rgba(37, 99, 235, .42); }
+    .workflow-step-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .workflow-step-status {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+    .workflow-step.good { border-color: rgba(5, 150, 105, .34); }
+    .workflow-step.warn { border-color: rgba(217, 119, 6, .36); }
+    .workflow-step.bad { border-color: rgba(220, 38, 38, .34); }
+    .flow-section { scroll-margin-top: 16px; }
+    .section-wide { grid-column: 1 / -1; }
+    #requestSection { order: 1; }
+    #bulkSection { order: 2; }
+    #runSection { order: 3; }
+    #mappingSection { order: 4; }
+    #resultsSection { order: 5; }
+    #templateSection { order: 6; }
+    #privacySection { order: 7; }
 
     .card {
       border: 1px solid rgba(148, 163, 184, 0.26);
@@ -184,6 +238,15 @@
     }
 
     .section-title { justify-content: space-between; margin-bottom: 12px; }
+    .flow-section.is-collapsed > :not(.section-title) { display: none !important; }
+    .flow-section.is-collapsed .section-title { margin-bottom: 0; }
+    .section-heading {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+    }
+    .section-heading > div { min-width: 0; }
     .section-title h2 {
       margin: 0;
       font-size: 17px;
@@ -193,6 +256,29 @@
       gap: 9px;
     }
     .section-title p { margin: 4px 0 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
+    .section-tools {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .section-toggle {
+      width: 34px;
+      height: 34px;
+      justify-content: center;
+      padding: 0;
+      font-size: 16px;
+      line-height: 1;
+    }
+    .section-toggle::before { content: "-"; }
+    .is-collapsed .section-toggle::before { content: "+"; }
+    .section-state {
+      max-width: 220px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
 
     .badge {
       display: inline-flex;
@@ -204,14 +290,15 @@
       border-radius: 999px;
       padding: 6px 10px;
       font-size: 12px;
-      font-weight: 800;
+      font-weight: 700;
     }
     [data-theme="dark"] .badge { background: rgba(15,23,42,0.56); }
     .badge.good { color: var(--good); border-color: rgba(5, 150, 105, .30); }
     .badge.warn { color: var(--warn); border-color: rgba(217, 119, 6, .30); }
     .badge.bad { color: var(--bad); border-color: rgba(220, 38, 38, .30); }
+    .badge.neutral { color: var(--muted); }
 
-    label { display: block; font-size: 12px; font-weight: 900; color: var(--muted); margin: 0 0 7px; text-transform: uppercase; letter-spacing: .06em; }
+    label { display: block; font-size: 12px; font-weight: 700; color: var(--muted); margin: 0 0 7px; text-transform: uppercase; letter-spacing: .06em; }
     .field { margin-bottom: 13px; }
     input, select, textarea {
       width: 100%;
@@ -249,7 +336,7 @@
     summary {
       padding: 11px 12px;
       cursor: pointer;
-      font-weight: 900;
+      font-weight: 700;
       color: var(--text);
       list-style: none;
     }
@@ -287,9 +374,23 @@
       color: var(--muted);
       padding: 9px 10px;
       border-radius: 6px;
-      font-weight: 900;
+      font-weight: 700;
     }
-    .tab.active { background: var(--panel-strong); color: var(--text); box-shadow: 0 1px 3px rgba(15,23,42,.10); }
+    .tab.active { background: var(--panel-strong); color: var(--brand); box-shadow: inset 0 0 0 1px rgba(37, 99, 235, .24), 0 1px 3px rgba(15,23,42,.10); }
+    .request-tabs { margin: 8px 0 12px; }
+    .request-panel { display: none; }
+    .request-panel.active { display: block; }
+    .request-panel textarea { min-height: 132px; }
+    .body-method-note { display: none; margin-bottom: 10px; }
+    .body-method-note.show { display: block; }
+    .method-get { border-color: rgba(37, 99, 235, .42); color: #1d4ed8; }
+    .method-post { border-color: rgba(79, 70, 229, .42); color: #4338ca; }
+    .method-put, .method-patch { border-color: rgba(217, 119, 6, .44); color: #b45309; }
+    .method-delete { border-color: rgba(220, 38, 38, .42); color: #b91c1c; }
+    [data-theme="dark"] .method-get { color: #93c5fd; }
+    [data-theme="dark"] .method-post { color: #c4b5fd; }
+    [data-theme="dark"] .method-put, [data-theme="dark"] .method-patch { color: #fcd34d; }
+    [data-theme="dark"] .method-delete { color: #fca5a5; }
 
     .table-wrap {
       overflow: auto;
@@ -322,9 +423,9 @@
     tr:hover td { background: rgba(79, 70, 229, .045); }
     .nowrap { white-space: nowrap; }
     .truncate { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .status-ok { color: var(--good); font-weight: 900; }
-    .status-warn { color: var(--warn); font-weight: 900; }
-    .status-bad { color: var(--bad); font-weight: 900; }
+    .status-ok { color: var(--good); font-weight: 700; }
+    .status-warn { color: var(--warn); font-weight: 700; }
+    .status-bad { color: var(--bad); font-weight: 700; }
 
     .mapping-row {
       display: grid;
@@ -449,7 +550,7 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      font-weight: 900;
+      font-weight: 700;
       font-size: 13px;
     }
     .template-url {
@@ -469,13 +570,13 @@
       color: var(--muted);
       font-family: var(--mono);
       font-size: 11px;
-      font-weight: 900;
+      font-weight: 700;
     }
     .template-count {
       justify-self: end;
       color: var(--muted);
       font-size: 12px;
-      font-weight: 800;
+      font-weight: 700;
     }
     .template-detail {
       padding: 14px;
@@ -591,6 +692,7 @@
       .method-url, .two, .three { grid-template-columns: 1fr; }
       .hero-top { align-items: flex-start; }
       .section-title { align-items: flex-start; }
+      .section-wide { grid-column: auto; }
       .result-actions select { flex: 1 1 100%; }
       .template-library { grid-template-columns: 1fr; }
     }
@@ -647,9 +749,11 @@
       </div>
     </section>
 
+    <nav class="workflow-stepper" id="workflowStepper" aria-label="Workflow progress"></nav>
+
     <main class="grid">
       <div>
-        <section class="card">
+        <section class="card flow-section section-wide" id="requestSection" data-section="request">
           <div class="section-title">
             <div>
               <h2>1. Request Builder</h2>
@@ -714,44 +818,64 @@
             </div>
           </div>
 
-          <div class="two">
+          <div class="tabs request-tabs" role="tablist" aria-label="Request controls">
+            <button class="tab active" type="button" data-request-tab="params">Params</button>
+            <button class="tab" type="button" data-request-tab="headers">Headers</button>
+            <button class="tab" type="button" data-request-tab="auth">Auth</button>
+            <button class="tab" type="button" data-request-tab="body">Body</button>
+          </div>
+
+          <div class="request-panel active" data-request-panel="params">
             <div class="field">
-              <label for="authType">Auth helper</label>
-              <select id="authType">
-                <option value="none">None / manual headers</option>
-                <option value="bearer">Bearer token</option>
-                <option value="apiKeyHeader">API key header</option>
-                <option value="basic">Basic auth</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="contentType">Body content type</label>
-              <select id="contentType">
-                <option value="application/json">application/json</option>
-                <option value="text/plain">text/plain</option>
-                <option value="application/x-www-form-urlencoded">x-www-form-urlencoded</option>
-                <option value="none">No content-type header</option>
-              </select>
+              <label for="params">Query params</label>
+              <textarea id="params" class="mono" spellcheck="false" placeholder="customerNumber={{customerNumber}}&#10;includeAccount=true"></textarea>
+              <div class="mini">Use <span class="mono">key=value</span> lines, <span class="mono">key: value</span> lines, or a JSON object. Params are appended to the URL when requests run.</div>
             </div>
           </div>
 
-          <div id="authFields" class="auth-grid"></div>
-
-          <details open>
-            <summary>Headers</summary>
-            <div class="detail-body">
+          <div class="request-panel" data-request-panel="headers">
+            <div class="field">
+              <label for="headers">Headers</label>
               <textarea id="headers" class="mono" spellcheck="false" placeholder='Authorization: Bearer {{token}}&#10;X-Customer: {{customerNumber}}'></textarea>
               <div class="mini">Use either <span class="mono">Key: Value</span> lines or a JSON object.</div>
             </div>
-          </details>
+          </div>
 
-          <details open>
-            <summary>Request body</summary>
-            <div class="detail-body">
-              <textarea id="body" class="mono" spellcheck="false" placeholder='{&#10;  "customerNumber": "{{customerNumber}}"&#10;}'></textarea>
-              <div class="mini">GET/DELETE can still use a body if your API supports it, but many APIs ignore it.</div>
+          <div class="request-panel" data-request-panel="auth">
+            <div class="two">
+              <div class="field">
+                <label for="authType">Auth helper</label>
+                <select id="authType">
+                  <option value="none">None / manual headers</option>
+                  <option value="bearer">Bearer token</option>
+                  <option value="apiKeyHeader">API key header</option>
+                  <option value="basic">Basic auth</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="contentType">Body content type</label>
+                <select id="contentType">
+                  <option value="application/json">application/json</option>
+                  <option value="text/plain">text/plain</option>
+                  <option value="application/x-www-form-urlencoded">x-www-form-urlencoded</option>
+                  <option value="none">No content-type header</option>
+                </select>
+              </div>
             </div>
-          </details>
+            <div id="authFields" class="auth-grid"></div>
+          </div>
+
+          <div class="request-panel" data-request-panel="body">
+            <div class="smart-box body-method-note" id="bodyMethodNote">
+              <h3>Body is usually not needed for this method</h3>
+              <div class="mini">Use Params for GET-style filtering. The app sends request bodies only for POST, PUT, PATCH, and DELETE.</div>
+            </div>
+            <div class="field">
+              <label for="body">Request body</label>
+              <textarea id="body" class="mono" spellcheck="false" placeholder='{&#10;  "customerNumber": "{{customerNumber}}"&#10;}'></textarea>
+              <div class="mini">POST, PUT, and PATCH commonly use a body. DELETE can use one only if your API expects it.</div>
+            </div>
+          </div>
 
           <div class="smart-box">
             <h3>Smart variable detector</h3>
@@ -770,7 +894,7 @@
           </details>
         </section>
 
-        <section class="card">
+        <section class="card flow-section section-wide" id="bulkSection" data-section="bulk">
           <div class="section-title">
             <div>
               <h2>2. Bulk Input</h2>
@@ -837,51 +961,56 @@
           </details>
         </section>
 
-        <section class="card">
+        <section class="card flow-section section-wide" id="runSection" data-section="run">
           <div class="section-title">
             <div>
-              <h2>3. Run Settings</h2>
-              <p>Control speed, retries, and timeouts to avoid overwhelming an API.</p>
-            </div>
-          </div>
-          <div class="three">
-            <div class="field">
-              <label for="concurrency">Concurrency</label>
-              <input id="concurrency" type="number" min="1" max="20" value="3" />
-            </div>
-            <div class="field">
-              <label for="delayMs">Delay ms</label>
-              <input id="delayMs" type="number" min="0" value="150" />
-            </div>
-            <div class="field">
-              <label for="timeoutMs">Timeout ms</label>
-              <input id="timeoutMs" type="number" min="1000" value="30000" />
-            </div>
-          </div>
-          <div class="two">
-            <div class="field">
-              <label for="retries">Retries</label>
-              <input id="retries" type="number" min="0" max="5" value="1" />
-            </div>
-            <div class="field">
-              <label for="saveRaw">Raw response</label>
-              <select id="saveRaw">
-                <option value="yes" selected>Keep raw JSON/text per row</option>
-                <option value="no">Do not keep raw response</option>
-              </select>
+              <h2>3. Run</h2>
+              <p>Review readiness, test one row, then run the request set.</p>
             </div>
           </div>
           <div class="run-validation" id="runValidation"></div>
           <div class="toolbar">
-            <button class="btn primary" id="runBtn" type="button">Run Bulk Requests</button>
+            <button class="btn primary" id="runBtn" type="button">Run</button>
             <button class="btn" id="testBtn" type="button">Test First Row</button>
             <button class="btn danger" id="stopBtn" type="button" disabled>■ Stop</button>
           </div>
+          <details style="margin-top: 12px;">
+            <summary>Run options</summary>
+            <div class="detail-body">
+              <div class="three">
+                <div class="field">
+                  <label for="concurrency">Concurrency</label>
+                  <input id="concurrency" type="number" min="1" max="20" value="3" />
+                </div>
+                <div class="field">
+                  <label for="delayMs">Delay ms</label>
+                  <input id="delayMs" type="number" min="0" value="150" />
+                </div>
+                <div class="field">
+                  <label for="timeoutMs">Timeout ms</label>
+                  <input id="timeoutMs" type="number" min="1000" value="30000" />
+                </div>
+              </div>
+              <div class="two">
+                <div class="field">
+                  <label for="retries">Retries</label>
+                  <input id="retries" type="number" min="0" max="5" value="1" />
+                </div>
+                <div class="field">
+                  <label for="saveRaw">Raw response</label>
+                  <select id="saveRaw">
+                    <option value="yes" selected>Keep raw JSON/text per row</option>
+                    <option value="no">Do not keep raw response</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </details>
         </section>
       </div>
 
       <div>
-        <section class="card">
+        <section class="card flow-section section-wide" id="mappingSection" data-section="mapping">
           <div class="section-title">
             <div>
               <h2>4. Smart Response Mapping</h2>
@@ -908,7 +1037,7 @@
           </details>
         </section>
 
-        <section class="card" id="resultsSection">
+        <section class="card flow-section section-wide" id="resultsSection" data-section="results">
           <div class="section-title">
             <div>
               <h2>5. Results</h2>
@@ -943,7 +1072,7 @@
           </div>
         </section>
 
-        <section class="card">
+        <section class="card flow-section" id="templateSection" data-section="template">
           <div class="section-title">
             <div>
               <h2>Template Library</h2>
@@ -977,7 +1106,7 @@
           </div>
         </section>
 
-        <section class="card">
+        <section class="card flow-section" id="privacySection" data-section="privacy">
           <div class="section-title">
             <div>
               <h2>CORS / Privacy Notes</h2>
@@ -1050,7 +1179,17 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         runStartedAt: 0,
         templateSelection: null,
         templateSearch: '',
-        templateCollapsed: {}
+        templateCollapsed: {},
+        sectionCollapsed: {
+          request: false,
+          bulk: true,
+          run: true,
+          mapping: true,
+          results: true,
+          template: true,
+          privacy: true
+        },
+        sectionTouched: {}
       };
 
       const storageKeys = {
@@ -1058,9 +1197,17 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         templates: 'apiBulkRunner.templates.v1'
       };
       const ROOT_FOLDER_ID = 'root';
+      const workflowSteps = [
+        { key: 'request', label: 'Request' },
+        { key: 'bulk', label: 'Input' },
+        { key: 'run', label: 'Run' },
+        { key: 'mapping', label: 'Mapping' },
+        { key: 'results', label: 'Results' },
+        { key: 'template', label: 'Library' }
+      ];
 
       const controls = [
-        'runMode', 'proxyUrl', 'proxyToken', 'method', 'url', 'authType', 'contentType', 'headers', 'body',
+        'runMode', 'proxyUrl', 'proxyToken', 'method', 'url', 'params', 'authType', 'contentType', 'headers', 'body',
         'bulkInput', 'firstRowMode', 'singleColumnVar', 'concurrency', 'delayMs', 'timeoutMs', 'retries', 'saveRaw'
       ];
 
@@ -1069,6 +1216,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
           label: 'Customer lookup - one request field',
           method: 'POST',
           url: 'https://api.example.com/customer/details',
+          params: '',
           headers: 'X-Client: ReaderNook-Lab\nX-Request-Id: bulk-{{customerNumber}}',
           body: { customerNumber: '{{customerNumber}}', includeAccount: true, source: 'bulk-runner' },
           bulkInput: 'customerNumber\n10001\n10002\n10003\n10004\n10005\n404',
@@ -1086,6 +1234,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
           label: 'Order status - multiple request fields',
           method: 'POST',
           url: 'https://api.example.com/accounts/{{accountId}}/orders/{{orderId}}',
+          params: '',
           headers: 'X-Tenant: {{tenant}}\nX-Request-Id: order-{{orderId}}',
           body: { accountId: '{{accountId}}', orderId: '{{orderId}}', tenant: '{{tenant}}', includeShipment: true },
           bulkInput: 'accountId,orderId,tenant\nA-100,ORD-9001,NA\nA-101,ORD-9002,EU\nA-102,ORD-9003,APAC\nA-404,ORD-404,NA',
@@ -1103,6 +1252,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
           label: 'Support case - nested response fields',
           method: 'PATCH',
           url: 'https://api.example.com/support/cases/{{caseId}}',
+          params: '',
           headers: 'Authorization: Bearer {{token}}\nX-Region: {{region}}',
           body: { caseId: '{{caseId}}', priority: '{{priority}}', owner: '{{owner}}', note: 'Bulk update from demo mode' },
           bulkInput: 'caseId,priority,owner,region,token\nCASE-1001,High,Ana,CA,demo-token\nCASE-1002,Normal,Noah,US,demo-token\nCASE-404,High,Maya,CA,demo-token',
@@ -1162,6 +1312,169 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         return document.querySelector('[data-sample].active')?.dataset.sample || 'single';
       }
 
+      function activeRequestTab() {
+        return document.querySelector('[data-request-tab].active')?.dataset.requestTab || 'params';
+      }
+
+      function setRequestTab(name) {
+        document.querySelectorAll('[data-request-tab]').forEach(tab => {
+          tab.classList.toggle('active', tab.dataset.requestTab === name);
+        });
+        document.querySelectorAll('[data-request-panel]').forEach(panel => {
+          panel.classList.toggle('active', panel.dataset.requestPanel === name);
+        });
+      }
+
+      function updateRequestMethodUI() {
+        const method = ($('method')?.value || 'GET').toLowerCase();
+        const methodEl = $('method');
+        if (methodEl) {
+          methodEl.classList.remove('method-get', 'method-post', 'method-put', 'method-patch', 'method-delete');
+          methodEl.classList.add(`method-${method}`);
+        }
+        const bodyIsDefault = ['post', 'put', 'patch'].includes(method);
+        $('bodyMethodNote')?.classList.toggle('show', !bodyIsDefault);
+        if (!bodyIsDefault && activeRequestTab() === 'body' && !$('body').value.trim()) setRequestTab('params');
+        updateWorkflowSections();
+      }
+
+      function initializeWorkflowSections() {
+        document.querySelectorAll('.flow-section').forEach(section => {
+          const key = section.dataset.section;
+          if (!key) return;
+          const title = section.querySelector('.section-title');
+          if (!title) return;
+          if (!title.querySelector('[data-section-status]')) {
+            const status = document.createElement('span');
+            status.className = 'badge neutral section-state';
+            status.dataset.sectionStatus = key;
+            status.textContent = 'Waiting';
+            title.appendChild(status);
+          }
+          if (key !== 'request' && !title.querySelector('[data-section-toggle]')) {
+            const button = document.createElement('button');
+            button.className = 'btn small section-toggle';
+            button.type = 'button';
+            button.dataset.sectionToggle = key;
+            button.setAttribute('aria-label', 'Toggle section');
+            title.appendChild(button);
+            button.addEventListener('click', () => {
+              state.sectionTouched[key] = true;
+              state.sectionCollapsed[key] = !state.sectionCollapsed[key];
+              renderWorkflowSections();
+            });
+          }
+        });
+      }
+
+      function autoUpdateWorkflowSections() {
+        const hasVariables = Boolean(state.variables.length);
+        const bulkRelevant = hasVariables && Boolean(state.rows.length || $('bulkInput')?.value.trim());
+        const runRelevant = hasVariables && Boolean(state.rows.length);
+        const mappingRelevant = Boolean(state.sampleJson || state.mappings.length);
+        const resultsRelevant = Boolean(state.results.length || state.running);
+
+        [
+          ['bulk', !hasVariables || !bulkRelevant],
+          ['run', !hasVariables || !runRelevant],
+          ['mapping', !mappingRelevant],
+          ['results', !resultsRelevant]
+        ].forEach(([key, collapsed]) => {
+          if (!state.sectionTouched[key]) state.sectionCollapsed[key] = collapsed;
+        });
+      }
+
+      function renderWorkflowSections() {
+        document.querySelectorAll('.flow-section').forEach(section => {
+          const key = section.dataset.section;
+          const collapsed = Boolean(state.sectionCollapsed[key]);
+          section.classList.toggle('is-collapsed', collapsed);
+          const button = section.querySelector('[data-section-toggle]');
+          if (button) button.setAttribute('aria-expanded', String(!collapsed));
+        });
+        renderWorkflowStatus();
+      }
+
+      function updateWorkflowSections() {
+        autoUpdateWorkflowSections();
+        renderWorkflowSections();
+      }
+
+      function workflowStatus(key) {
+        const mode = $('runMode')?.value || 'demo';
+        const needsUrl = mode !== 'demo' && !$('url')?.value.trim();
+        const missing = typeof missingRequestColumns === 'function' ? missingRequestColumns() : [];
+        const canRun = Boolean(state.rows.length) && !missing.length && !needsUrl;
+
+        if (key === 'request') {
+          if (needsUrl) return { label: 'Needs URL', tone: 'bad' };
+          return { label: 'Ready', tone: 'good' };
+        }
+        if (key === 'bulk') {
+          if (!state.variables.length) return { label: 'No variables', tone: 'neutral' };
+          if (state.rows.length) return { label: `${state.rows.length} row${state.rows.length === 1 ? '' : 's'}`, tone: 'good' };
+          return { label: state.variables.length ? 'Needs input' : 'Waiting', tone: state.variables.length ? 'warn' : 'neutral' };
+        }
+        if (key === 'run') {
+          if (canRun) return { label: 'Ready', tone: 'good' };
+          if (needsUrl) return { label: 'Needs URL', tone: 'bad' };
+          if (!state.variables.length) return { label: 'No bulk vars', tone: 'neutral' };
+          if (missing.length) return { label: 'Needs match', tone: 'bad' };
+          return { label: state.rows.length ? 'Needs input' : 'Waiting', tone: state.rows.length ? 'warn' : 'neutral' };
+        }
+        if (key === 'mapping') {
+          if (state.mappings.length) return { label: `${state.mappings.length} field${state.mappings.length === 1 ? '' : 's'}`, tone: 'good' };
+          if (state.sampleJson) return { label: 'Needs fields', tone: 'warn' };
+          return { label: 'Needs sample', tone: 'neutral' };
+        }
+        if (key === 'results') {
+          if (state.running) return { label: 'Running', tone: 'warn' };
+          if (state.results.length) return { label: `${state.results.length} done`, tone: 'good' };
+          return { label: 'Not run', tone: 'neutral' };
+        }
+        if (key === 'template') {
+          const count = getTemplateLibrary().templates.length;
+          return { label: count ? `${count} saved` : 'Optional', tone: count ? 'good' : 'neutral' };
+        }
+        if (key === 'privacy') return { label: 'Info', tone: 'neutral' };
+        return { label: 'Waiting', tone: 'neutral' };
+      }
+
+      function renderWorkflowStatus() {
+        workflowSteps.forEach(step => {
+          const status = workflowStatus(step.key);
+          document.querySelectorAll(`[data-section-status="${step.key}"]`).forEach(el => {
+            el.textContent = status.label;
+            el.className = `badge section-state ${status.tone}`;
+          });
+        });
+
+        const target = $('workflowStepper');
+        if (!target) return;
+        target.innerHTML = workflowSteps.map(step => {
+          const status = workflowStatus(step.key);
+          return `
+            <button class="workflow-step ${escapeHtml(status.tone)}" type="button" data-step="${escapeHtml(step.key)}">
+              <span class="workflow-step-label">${escapeHtml(step.label)}</span>
+              <span class="workflow-step-status">${escapeHtml(status.label)}</span>
+            </button>
+          `;
+        }).join('');
+        target.querySelectorAll('[data-step]').forEach(button => {
+          button.addEventListener('click', () => {
+            const key = button.dataset.step;
+            const section = document.querySelector(`[data-section="${key}"]`);
+            if (!section) return;
+            if (key !== 'request') {
+              state.sectionTouched[key] = true;
+              state.sectionCollapsed[key] = false;
+              renderWorkflowSections();
+            }
+            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          });
+        });
+      }
+
       function readForm() {
         const cfg = {};
         controls.forEach(id => cfg[id] = $(id)?.value ?? '');
@@ -1183,6 +1496,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         });
         if (!appConfig.enableProxyMode && $('runMode').value === 'proxy') $('runMode').value = 'direct';
         updateAuthFields();
+        updateRequestMethodUI();
         Object.entries(cfg.authFields || {}).forEach(([id, value]) => {
           if ($(id)) $(id).value = value;
         });
@@ -1199,6 +1513,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         renderDemoArtifacts();
         renderBulkGridEditor();
         updateModeUI();
+        updateWorkflowSections();
       }
 
       function saveSettings() {
@@ -1573,6 +1888,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         if ($('templateSearch')) $('templateSearch').value = state.templateSearch;
         renderTemplateTree(library);
         renderTemplateDetail(library);
+        renderWorkflowStatus();
       }
 
       function renderDemoSelect() {
@@ -1610,7 +1926,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
       }
 
       function detectVariables() {
-        const text = [$('url').value, $('headers').value, $('body').value, getAuthDynamicValues()].join('\n');
+        const text = [$('url').value, $('params').value, $('headers').value, $('body').value, getAuthDynamicValues()].join('\n');
         const regex = /{{\s*([a-zA-Z0-9_.-]+)\s*}}/g;
         const vars = [];
         let match;
@@ -1623,13 +1939,14 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         renderDemoArtifacts();
         renderBulkGridEditor();
         renderRunValidation();
+        updateWorkflowSections();
       }
 
       function renderVariables() {
         const vars = state.variables;
         $('variableSummary').textContent = vars.length
           ? `${vars.length} variable${vars.length === 1 ? '' : 's'} detected. Bulk input will be matched automatically where possible.`
-          : 'No variables detected yet. Add {{customerNumber}} or another variable in your URL/body/header.';
+          : 'No variables detected yet. Add {{customerNumber}} in your URL, params, headers, auth, or body to run in bulk.';
         $('variableTokens').innerHTML = vars.map(v => `<span class="token">{{${escapeHtml(v)}}}</span>`).join('');
       }
 
@@ -1960,6 +2277,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
           state.rowColumns = [];
           renderInputPreview();
           renderRunValidation();
+          updateWorkflowSections();
           return;
         }
 
@@ -1996,6 +2314,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
           smartColumnMatch();
           renderInputPreview();
           renderRunValidation();
+          updateWorkflowSections();
           if (showToast) toast(`Parsed ${rows.length} row${rows.length === 1 ? '' : 's'}.`, 'good');
         } catch (err) {
           toast(err.message || 'Could not parse bulk input.', 'bad');
@@ -2122,29 +2441,47 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
           </div>
         `;
         $('runBtn').disabled = state.running || !canRun;
+        updateWorkflowSections();
       }
 
-      function parseHeaders(text, row) {
+      function parseKeyValueText(text, row) {
         const replaced = replaceVars(text || '', row);
-        const headers = {};
-        if (!replaced.trim()) return headers;
+        const out = {};
+        if (!replaced.trim()) return out;
         try {
           const obj = JSON.parse(replaced);
-          Object.entries(obj || {}).forEach(([k, v]) => { if (k) headers[k] = String(v); });
-          return headers;
+          Object.entries(obj || {}).forEach(([k, v]) => { if (k) out[k] = String(v ?? ''); });
+          return out;
         } catch {
           replaced.split(/\r?\n/).forEach(line => {
             const trimmed = line.trim();
             if (!trimmed || trimmed.startsWith('#')) return;
-            const idx = trimmed.indexOf(':');
+            const eq = trimmed.indexOf('=');
+            const colon = trimmed.indexOf(':');
+            const idx = eq > -1 && (colon === -1 || eq < colon) ? eq : colon;
             if (idx > -1) {
               const key = trimmed.slice(0, idx).trim();
               const val = trimmed.slice(idx + 1).trim();
-              if (key) headers[key] = val;
+              if (key) out[key] = val;
             }
           });
-          return headers;
+          return out;
         }
+      }
+
+      function parseHeaders(text, row) {
+        return parseKeyValueText(text, row);
+      }
+
+      function appendQueryParams(rawUrl, row) {
+        const params = parseKeyValueText($('params')?.value || '', row);
+        if (!Object.keys(params).length) return rawUrl;
+        const url = new URL(rawUrl);
+        Object.entries(params).forEach(([key, value]) => {
+          if (!key) return;
+          url.searchParams.set(key, value);
+        });
+        return url.toString();
       }
 
       function addAuthHeaders(headers, row) {
@@ -2179,7 +2516,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
 
       function buildRequest(row) {
         const method = $('method').value;
-        const url = replaceVars($('url').value.trim(), row);
+        const url = appendQueryParams(replaceVars($('url').value.trim(), row), row);
         const headers = addAuthHeaders(parseHeaders($('headers').value, row), row);
         const rawBody = replaceVars($('body').value, row);
         const hasBody = rawBody.trim() && !['GET', 'HEAD'].includes(method);
@@ -2423,6 +2760,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         document.querySelectorAll('[data-path]').forEach(btn => btn.addEventListener('click', () => {
           addMapping(titleFromPath(btn.dataset.path), btn.dataset.path);
         }));
+        updateWorkflowSections();
       }
 
       function addMapping(column = '', path = '') {
@@ -2436,6 +2774,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
           $('mappingList').innerHTML = '<div class="empty">No mapping yet. Use “Auto-map from Sample” or add fields manually.</div>';
           $('mappingPreview').innerHTML = '<h3>Mapped columns</h3><div class="mini">No response columns mapped yet.</div>';
           renderRunValidation();
+          updateWorkflowSections();
           return;
         }
         $('mappingList').innerHTML = state.mappings.map((m, idx) => `
@@ -2466,6 +2805,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
           saveSettingsDebounced();
         }));
         renderRunValidation();
+        updateWorkflowSections();
       }
 
       function mappingStatusHtml(mapping) {
@@ -2519,6 +2859,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         $('progressBar').style.width = total ? `${Math.min(100, Math.round(done / total * 100))}%` : '0%';
         $('resultBadge').textContent = state.running ? 'Running' : (done ? 'Complete' : 'Idle');
         $('resultBadge').className = 'badge ' + (state.running ? 'warn' : done ? 'good' : '');
+        updateWorkflowSections();
 
         if (!state.results.length) {
           $('resultsTable').innerHTML = '<div class="empty">Run requests to see results here.</div>';
@@ -2790,6 +3131,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         $('demoSample').value = state.demoScenario;
         $('method').value = demo.method;
         $('url').value = demo.url;
+        $('params').value = demo.params || '';
         $('authType').value = 'none';
         $('contentType').value = 'application/json';
         $('headers').value = demo.headers;
@@ -2807,6 +3149,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         state.discoveredPaths = discoverPaths(state.sampleJson);
         state.mappings = demo.responseMappings.map(m => ({ ...m }));
         updateModeUI();
+        updateRequestMethodUI();
         renderRequestMappings();
         renderMappings();
         renderSampleResponse();
@@ -3028,6 +3371,10 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         });
         $('authType').addEventListener('change', () => { updateAuthFields(); detectVariables(); saveSettings(); });
         $('runMode').addEventListener('change', () => { updateModeUI(); saveSettings(); });
+        $('method').addEventListener('change', () => { updateRequestMethodUI(); saveSettings(); });
+        document.querySelectorAll('[data-request-tab]').forEach(tab => {
+          tab.addEventListener('click', () => setRequestTab(tab.dataset.requestTab));
+        });
         $('demoSample').addEventListener('change', () => loadDemo($('demoSample').value));
         $('loadSelectedDemoBtn').addEventListener('click', () => loadDemo($('demoSample').value));
         $('fillLocalAgentBtn').addEventListener('click', fillLocalAgentDefaults);
@@ -3125,11 +3472,12 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
       function init() {
         configureProxyAvailability();
         renderDemoSelect();
+        initializeWorkflowSections();
         bindEvents();
         updateAuthFields();
+        updateRequestMethodUI();
         renderSavedLibrary();
-        const restored = loadSettings();
-        if (!restored) loadDemo();
+        loadSettings();
         detectVariables();
         parseBulkInput(false);
         renderInputColumnHints();
@@ -3141,6 +3489,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         $('resultFilter').value = state.resultFilter;
         renderResults();
         updateModeUI();
+        updateWorkflowSections();
       }
 
       init();
