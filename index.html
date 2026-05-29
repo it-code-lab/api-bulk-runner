@@ -1106,7 +1106,6 @@
               <div id="templateDetailBody" class="template-detail-body"></div>
               <div class="template-detail-actions">
                 <button class="btn" id="loadTemplateBtn" type="button">Load</button>
-                <button class="btn" id="updateTemplateBtn" type="button">Update</button>
                 <button class="btn" id="renameTemplateBtn" type="button">Rename</button>
                 <button class="btn" id="moveTemplateBtn" type="button">Move</button>
                 <button class="btn danger" id="deleteTemplateBtn" type="button">Delete</button>
@@ -2027,7 +2026,6 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         const isFolder = selected?.type === 'folder';
 
         $('loadTemplateBtn').disabled = !isTemplate;
-        $('updateTemplateBtn').disabled = !isTemplate;
         $('renameTemplateBtn').disabled = !selected;
         $('moveTemplateBtn').disabled = !selected;
         $('deleteTemplateBtn').disabled = !selected;
@@ -3606,17 +3604,10 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         if (selected?.type !== 'template') return toast('Select a request template first.', 'bad');
         writeForm(selected.item.config);
         saveSettings();
+        state.sectionCollapsed.request = false;
+        updateWorkflowSections();
+        $('requestSection')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         toast('Template loaded.', 'good');
-      }
-
-      function updateSelectedTemplate() {
-        const library = getTemplateLibrary();
-        const selected = getSelectedLibraryItem(library);
-        if (selected?.type !== 'template') return toast('Select a request template first.', 'bad');
-        selected.item.config = readForm();
-        selected.item.updatedAt = new Date().toISOString();
-        setTemplateLibrary(library);
-        toast('Selected template updated.', 'good');
       }
 
       function renameSelectedTemplateItem() {
@@ -3858,7 +3849,6 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         $('newFolderBtn').addEventListener('click', createTemplateFolder);
         $('saveTemplateBtn').addEventListener('click', saveCurrentTemplate);
         $('loadTemplateBtn').addEventListener('click', loadSelectedTemplate);
-        $('updateTemplateBtn').addEventListener('click', updateSelectedTemplate);
         $('renameTemplateBtn').addEventListener('click', renameSelectedTemplateItem);
         $('moveTemplateBtn').addEventListener('click', moveSelectedTemplateItem);
         $('deleteTemplateBtn').addEventListener('click', deleteSelectedTemplateItem);
