@@ -771,7 +771,7 @@
           <div class="section-title">
             <div>
               <h2>1. Request Builder</h2>
-              <p>Use variables like <span class="mono">{{customerNumber}}</span> in URL, headers, or body.</p>
+              <p>Enter the endpoint and optionally use <span class="mono">{{variableName}}</span> where row values should be inserted.</p>
             </div>
             <span class="badge" id="modeBadge">Browser mode</span>
           </div>
@@ -828,7 +828,7 @@
             </div>
             <div>
               <label for="url">URL</label>
-              <input id="url" class="mono" placeholder="https://api.example.com/customers/{{customerNumber}}" />
+              <input id="url" class="mono" placeholder="https://api.example.com/resource" />
             </div>
           </div>
 
@@ -842,16 +842,16 @@
           <div class="request-panel active" data-request-panel="params">
             <div class="field">
               <label for="params">Query params</label>
-              <textarea id="params" class="mono" spellcheck="false" placeholder="customerNumber={{customerNumber}}&#10;includeAccount=true"></textarea>
-              <div class="mini">Use <span class="mono">key=value</span> lines, <span class="mono">key: value</span> lines, or a JSON object. Params are appended to the URL when requests run.</div>
+              <textarea id="params" class="mono" spellcheck="false" placeholder="page=1&#10;limit=25"></textarea>
+              <div class="mini">Use <span class="mono">key=value</span> lines, <span class="mono">key: value</span> lines, or a JSON object. Use <span class="mono">{{variableName}}</span> for bulk values.</div>
             </div>
           </div>
 
           <div class="request-panel" data-request-panel="headers">
             <div class="field">
               <label for="headers">Headers</label>
-              <textarea id="headers" class="mono" spellcheck="false" placeholder='Authorization: Bearer {{token}}&#10;X-Customer: {{customerNumber}}'></textarea>
-              <div class="mini">Use either <span class="mono">Key: Value</span> lines or a JSON object.</div>
+              <textarea id="headers" class="mono" spellcheck="false" placeholder="Accept: application/json"></textarea>
+              <div class="mini">Use either <span class="mono">Key: Value</span> lines or a JSON object. Add auth headers manually or use the Auth tab.</div>
             </div>
           </div>
 
@@ -886,8 +886,8 @@
             </div>
             <div class="field">
               <label for="body">Request body</label>
-              <textarea id="body" class="mono" spellcheck="false" placeholder='{&#10;  "customerNumber": "{{customerNumber}}"&#10;}'></textarea>
-              <div class="mini">POST, PUT, and PATCH commonly use a body. DELETE can use one only if your API expects it.</div>
+              <textarea id="body" class="mono" spellcheck="false" placeholder='{&#10;  "name": "Example"&#10;}'></textarea>
+              <div class="mini">POST, PUT, and PATCH commonly use a body. Use <span class="mono">{{variableName}}</span> for row-specific values.</div>
             </div>
           </div>
 
@@ -2008,7 +2008,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         const vars = state.variables;
         $('variableSummary').textContent = vars.length
           ? `${vars.length} variable${vars.length === 1 ? '' : 's'} detected. Bulk input will be matched automatically where possible.`
-          : 'No variables detected yet. Add {{customerNumber}} in your URL, params, headers, auth, or body to run in bulk.';
+          : 'No variables detected yet. Add {{variableName}} in your URL, params, headers, auth, or body to run in bulk.';
         $('variableTokens').innerHTML = vars.map(v => `<span class="token">{{${escapeHtml(v)}}}</span>`).join('');
       }
 
