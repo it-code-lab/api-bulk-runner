@@ -4,9 +4,9 @@
  * Recommended only for trusted/private use because API keys flow through this server.
  *
  * Setup:
- * 1. Upload this file outside public access if possible, or protect it.
+ * 1. Upload this file and .htaccess to your backend folder, or protect it.
  * 2. Set an environment variable PROXY_TOKEN, or edit $PROXY_TOKEN below.
- * 3. In the app, use this file URL as the proxy endpoint and paste the token.
+ * 3. In the app, use /request as the proxy endpoint and paste the token.
  */
 
 $PROXY_TOKEN = getenv('PROXY_TOKEN') ?: 'CHANGE_ME_TO_A_LONG_RANDOM_TOKEN';
@@ -30,18 +30,61 @@ function json_response($status, $data) {
     exit;
 }
 
+function current_route() {
+    $pathInfo = $_SERVER['PATH_INFO'] ?? '';
+    if ($pathInfo !== '') {
+        $route = '/' . trim($pathInfo, '/');
+        return $route === '/' ? '/' : $route;
+    }
+
+    $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+    $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
+
+    if ($scriptName && strpos($requestPath, $scriptName) === 0) {
+        $extra = substr($requestPath, strlen($scriptName));
+        $route = '/' . trim($extra, '/');
+        return $route === '/' ? '/' : $route;
+    }
+
+    $scriptDir = rtrim(str_replace('\\', '/', dirname($scriptName)), '/');
+    if ($scriptDir && $scriptDir !== '/' && strpos($requestPath, $scriptDir) === 0) {
+        $extra = substr($requestPath, strlen($scriptDir));
+    } else {
+        $extra = $requestPath;
+    }
+
+    $route = '/' . trim($extra, '/');
+    if ($route === '/index.php') return '/';
+    return $route === '/' ? '/' : $route;
+}
+
+function request_base_url() {
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '/index.php');
+    $dir = rtrim(dirname($scriptName), '/');
+    return $scheme . '://' . $host . ($dir && $dir !== '.' ? $dir : '');
+}
+
 $token = $_SERVER['HTTP_X_LOCAL_AGENT_TOKEN'] ?? '';
 if (!$token || !hash_equals($PROXY_TOKEN, $token)) {
     json_response(401, ['ok' => false, 'error' => 'Invalid or missing X-Local-Agent-Token.']);
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+$route = current_route();
+
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($route === '/' || $route === '/health')) {
     json_response(200, [
         'ok' => true,
         'name' => 'ReaderNook API Bulk Runner PHP Proxy',
         'version' => '1.0.0',
-        'startedAt' => date('c')
+        'startedAt' => date('c'),
+        'endpoint' => request_base_url() . '/request'
     ]);
+}
+
+if ($route !== '/' && $route !== '/request') {
+    json_response(404, ['ok' => false, 'error' => 'Not found. Use GET /health or POST /request.']);
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

@@ -223,7 +223,7 @@
     .workflow-step.good { border-color: rgba(5, 150, 105, .34); }
     .workflow-step.warn { border-color: rgba(217, 119, 6, .36); }
     .workflow-step.bad { border-color: rgba(220, 38, 38, .34); }
-    .flow-section { scroll-margin-top: 16px; }
+    .flow-section { scroll-margin-top: 118px; }
     .section-wide { grid-column: 1 / -1; }
     #requestSection { order: 1; }
     #bulkSection { order: 2; }
@@ -288,9 +288,10 @@
     .run-header-actions {
       display: flex;
       align-items: center;
-      justify-content: flex-end;
+      justify-content: flex-start;
       gap: 8px;
       flex-wrap: wrap;
+      margin: 10px 0 12px;
     }
     .run-header-actions.hide-actions { display: none; }
 
@@ -461,7 +462,7 @@
       gap: 10px;
       flex-wrap: wrap;
     }
-    .select-row select { flex: 1 1 220px; }
+    .select-row select, .select-row input { flex: 1 1 220px; }
     .grid-tools { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
     .bulk-grid-editor {
       overflow: auto;
@@ -512,7 +513,7 @@
 
     .template-library {
       display: grid;
-      grid-template-columns: minmax(260px, .9fr) minmax(280px, 1.1fr);
+      grid-template-columns: minmax(320px, .8fr) minmax(420px, 1.2fr);
       gap: 12px;
       align-items: stretch;
     }
@@ -610,6 +611,10 @@
       color: var(--muted);
       font-size: 12px;
       line-height: 1.45;
+    }
+    .template-meta .mono {
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
     .template-detail-actions { gap: 8px; }
 
@@ -798,10 +803,15 @@
               <div class="field">
                 <label for="proxyUrl">Proxy / Local Agent endpoint URL</label>
                 <input id="proxyUrl" class="mono" placeholder="http://127.0.0.1:8787/request" />
+                <div class="mini">Stored locally as your default proxy endpoint and reused across run modes.</div>
               </div>
               <div class="field">
                 <label for="proxyToken">Proxy token</label>
-                <input id="proxyToken" class="mono" placeholder="Paste the backend/local agent token" autocomplete="off" />
+                <div class="select-row">
+                  <input id="proxyToken" class="mono" type="password" placeholder="Paste the backend/local agent token" autocomplete="off" />
+                  <button class="btn small" id="toggleProxyTokenBtn" type="button" aria-pressed="false">Show</button>
+                </div>
+                <div class="mini">Stored locally in this browser, masked by default, and excluded from templates or exported settings.</div>
               </div>
             </div>
             <div class="toolbar">
@@ -810,7 +820,7 @@
             </div>
             <div class="smart-box" id="agentStatusBox" style="margin-top: 12px;">
               <h3>Local Agent / Proxy Status</h3>
-              <div id="agentStatus" class="mini">Not tested yet. Start the Node local agent or FastAPI proxy, paste its token, then test the connection.</div>
+              <div id="agentStatus" class="mini">Not tested yet. Start the Node, PHP, or Python proxy, paste its token, then test the connection.</div>
             </div>
             <div class="mini" style="margin-top: 8px;">Backend proxy adapters accept JSON fields: method, url, headers, body, timeoutMs. They add CORS headers for this UI and forward requests from your environment.</div>
           </div>
@@ -981,13 +991,13 @@
               <h2>3. Run</h2>
               <p>Review readiness, test one row, then run the request set.</p>
             </div>
-            <div class="run-header-actions hide-actions" id="runHeaderActions">
-              <button class="btn" id="testBtn" type="button">Test First Row</button>
-              <button class="btn primary" id="runBtn" type="button">Run</button>
-              <button class="btn danger" id="stopBtn" type="button" disabled>■ Stop</button>
-            </div>
           </div>
           <div class="run-validation" id="runValidation"></div>
+          <div class="run-header-actions hide-actions" id="runHeaderActions">
+            <button class="btn" id="testBtn" type="button">Test First Row</button>
+            <button class="btn primary" id="runBtn" type="button">Run</button>
+            <button class="btn danger" id="stopBtn" type="button" disabled>■ Stop</button>
+          </div>
           <details style="margin-top: 12px;">
             <summary>Run options</summary>
             <div class="detail-body">
@@ -1086,7 +1096,7 @@
           </div>
         </section>
 
-        <section class="card flow-section" id="templateSection" data-section="template">
+        <section class="card flow-section section-wide" id="templateSection" data-section="template">
           <div class="section-title">
             <div>
               <h2>Template Library</h2>
@@ -1119,7 +1129,7 @@
           </div>
         </section>
 
-        <section class="card flow-section" id="privacySection" data-section="privacy">
+        <section class="card flow-section section-wide" id="privacySection" data-section="privacy">
           <div class="section-title">
             <div>
               <h2>CORS / Privacy Notes</h2>
@@ -1135,12 +1145,23 @@
           <details id="localAgentHelp" class="hide" style="margin-top: 12px;">
             <summary>Backend proxy setup</summary>
             <div class="detail-body">
-              <pre class="mono" style="white-space: pre-wrap;">node local-agent.js</pre>
+              <h3>Node local agent</h3>
+              <pre class="mono" style="white-space: pre-wrap;">cd backend-examples/node
+node local-agent.js</pre>
+              <p class="mini">Endpoint: <span class="mono">http://127.0.0.1:8787/request</span>. Copy the token printed in the terminal.</p>
+
+              <h3>PHP / XAMPP proxy</h3>
+              <pre class="mono" style="white-space: pre-wrap;">Copy backend-examples/php/index.php and backend-examples/php/.htaccess to:
+C:\xampp\htdocs\api-runner-backend\</pre>
+              <p class="mini">Endpoint: <span class="mono">http://localhost/api-runner-backend/request</span>. Health: <span class="mono">http://localhost/api-runner-backend/health</span>. Use the token configured in <span class="mono">index.php</span>.</p>
+
+              <h3>Python FastAPI proxy</h3>
               <pre class="mono" style="white-space: pre-wrap;">cd backend-examples/python-fastapi-proxy
 python -m venv .venv
+.venv\Scripts\activate
 pip install -r requirements.txt
 uvicorn main:app --host 127.0.0.1 --port 8787</pre>
-              <p class="mini">Set or copy the proxy token, paste it into the Proxy token field above, then use the default endpoint: <span class="mono">http://127.0.0.1:8787/request</span>.</p>
+              <p class="mini">Endpoint: <span class="mono">http://127.0.0.1:8787/request</span>. Set or copy the proxy token, paste it above, then click Test Agent.</p>
             </div>
           </details>
         </section>
@@ -1171,7 +1192,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
 
       const $ = (id) => document.getElementById(id);
       const appConfig = {
-        enableProxyMode: false,
+        enableProxyMode: true,
         fullVersionUrl: ''
       };
 
@@ -1196,6 +1217,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         activeWorkflowStep: 'request',
         variableSignature: '',
         requestSignature: '',
+        proxyConnection: { state: 'untested', message: '' },
         sectionCollapsed: {
           request: false,
           bulk: true,
@@ -1210,7 +1232,10 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
 
       const storageKeys = {
         settings: 'apiBulkRunner.settings.v1',
-        templates: 'apiBulkRunner.templates.v1'
+        templates: 'apiBulkRunner.templates.v1',
+        proxyUrl: 'apiBulkRunner.proxyUrl.local.v1',
+        proxyToken: 'apiBulkRunner.proxyToken.local.v1',
+        legacyProxyToken: 'apiBulkRunner.proxyToken.session.v1'
       };
       const ROOT_FOLDER_ID = 'root';
       const workflowSteps = [
@@ -1579,6 +1604,19 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         renderWorkflowSections();
       }
 
+      function proxyPrivacyStatus() {
+        const mode = $('runMode')?.value || 'demo';
+        if (!appConfig.enableProxyMode) return { label: 'Browser only', tone: 'neutral' };
+        if (mode === 'proxy') {
+          if (state.proxyConnection.state === 'connected') return { label: 'Connected', tone: 'good' };
+          if (state.proxyConnection.state === 'testing') return { label: 'Testing', tone: 'warn' };
+          if (state.proxyConnection.state === 'error') return { label: 'Check proxy', tone: 'bad' };
+          return { label: 'Test proxy', tone: 'warn' };
+        }
+        if (mode === 'direct') return { label: 'CORS applies', tone: 'warn' };
+        return { label: 'Info', tone: 'neutral' };
+      }
+
       function workflowStatus(key) {
         const mode = $('runMode')?.value || 'demo';
         const needsUrl = mode !== 'demo' && !$('url')?.value.trim();
@@ -1615,12 +1653,12 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
           const count = getTemplateLibrary().templates.length;
           return { label: count ? `${count} saved` : 'Optional', tone: count ? 'good' : 'neutral' };
         }
-        if (key === 'privacy') return { label: 'Info', tone: 'neutral' };
+        if (key === 'privacy') return proxyPrivacyStatus();
         return { label: 'Waiting', tone: 'neutral' };
       }
 
       function renderWorkflowStatus() {
-        workflowSteps.forEach(step => {
+        [...workflowSteps, { key: 'privacy', label: 'Privacy' }].forEach(step => {
           const status = workflowStatus(step.key);
           document.querySelectorAll(`[data-section-status="${step.key}"]`).forEach(el => {
             el.textContent = status.label;
@@ -1655,9 +1693,47 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         });
       }
 
+      function saveProxyTokenLocal() {
+        try {
+          const token = $('proxyToken')?.value || '';
+          if (token) localStorage.setItem(storageKeys.proxyToken, token);
+          else localStorage.removeItem(storageKeys.proxyToken);
+        } catch {}
+      }
+
+      function saveProxyUrlLocal() {
+        try {
+          const url = $('proxyUrl')?.value || '';
+          if (url) localStorage.setItem(storageKeys.proxyUrl, url);
+          else localStorage.removeItem(storageKeys.proxyUrl);
+        } catch {}
+      }
+
+      function loadProxyTokenLocal() {
+        try {
+          const token = localStorage.getItem(storageKeys.proxyToken)
+            || sessionStorage.getItem(storageKeys.legacyProxyToken)
+            || '';
+          if ($('proxyToken') && token) $('proxyToken').value = token;
+          if (token) localStorage.setItem(storageKeys.proxyToken, token);
+          sessionStorage.removeItem(storageKeys.legacyProxyToken);
+        } catch {}
+      }
+
+      function loadProxyUrlLocal(fallback = '') {
+        try {
+          const url = localStorage.getItem(storageKeys.proxyUrl) || fallback || '';
+          if ($('proxyUrl') && url) $('proxyUrl').value = url;
+          if (url) localStorage.setItem(storageKeys.proxyUrl, url);
+        } catch {}
+      }
+
       function readForm() {
         const cfg = {};
-        controls.forEach(id => cfg[id] = $(id)?.value ?? '');
+        controls.forEach(id => {
+          if (id === 'proxyToken' || id === 'proxyUrl') return;
+          cfg[id] = $(id)?.value ?? '';
+        });
         cfg.demoSample = $('demoSample')?.value || state.demoScenario;
         cfg.authFields = {};
         ['bearerToken', 'apiKeyName', 'apiKeyValue', 'basicUser', 'basicPass'].forEach(id => {
@@ -1672,6 +1748,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
 
       function writeForm(cfg = {}) {
         controls.forEach(id => {
+          if (id === 'proxyToken' || id === 'proxyUrl') return;
           if ($(id) && Object.prototype.hasOwnProperty.call(cfg, id)) $(id).value = cfg[id];
         });
         if (!appConfig.enableProxyMode && $('runMode').value === 'proxy') $('runMode').value = 'direct';
@@ -1695,24 +1772,36 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         updateModeUI();
         rememberRequestSignature();
         updateWorkflowSections();
+        loadProxyTokenLocal();
+        loadProxyUrlLocal();
       }
 
       function saveSettings() {
         const cfg = readForm();
         cfg.theme = document.documentElement.getAttribute('data-theme') || 'light';
         localStorage.setItem(storageKeys.settings, JSON.stringify(cfg));
+        saveProxyUrlLocal();
+        saveProxyTokenLocal();
       }
 
       function loadSettings() {
         try {
           const raw = localStorage.getItem(storageKeys.settings);
-          if (!raw) return false;
+          if (!raw) {
+            loadProxyUrlLocal();
+            loadProxyTokenLocal();
+            return false;
+          }
           const cfg = JSON.parse(raw);
           if (cfg.theme) document.documentElement.setAttribute('data-theme', cfg.theme);
           writeForm(cfg);
+          loadProxyUrlLocal(cfg.proxyUrl || '');
+          loadProxyTokenLocal();
           return true;
         } catch (err) {
           console.warn(err);
+          loadProxyUrlLocal();
+          loadProxyTokenLocal();
           return false;
         }
       }
@@ -2401,11 +2490,32 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         return headers;
       }
 
+      function setProxyConnection(stateName, message = '') {
+        state.proxyConnection = { state: stateName, message };
+        renderWorkflowStatus();
+      }
+
+      function resetProxyConnection() {
+        if (state.proxyConnection.state === 'untested') return;
+        setProxyConnection('untested');
+      }
+
+      function toggleProxyTokenVisibility() {
+        const input = $('proxyToken');
+        const button = $('toggleProxyTokenBtn');
+        if (!input || !button) return;
+        const shouldShow = input.type === 'password';
+        input.type = shouldShow ? 'text' : 'password';
+        button.textContent = shouldShow ? 'Hide' : 'Show';
+        button.setAttribute('aria-pressed', String(shouldShow));
+      }
+
       function healthUrlFromProxyUrl(raw) {
         const fallback = 'http://127.0.0.1:8787/request';
         const value = String(raw || fallback).trim();
         const url = new URL(value);
         if (!url.pathname || url.pathname === '/') url.pathname = '/health';
+        else if (/\.php$/i.test(url.pathname)) return url.toString();
         else if (url.pathname.endsWith('/request')) url.pathname = url.pathname.replace(/\/request$/, '/health');
         else if (url.pathname.endsWith('/')) url.pathname += 'health';
         else url.pathname += '/health';
@@ -2429,17 +2539,20 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         try {
           if (!$('proxyUrl').value.trim()) fillLocalAgentDefaults();
           statusEl.textContent = 'Testing connection...';
+          setProxyConnection('testing');
           const healthUrl = healthUrlFromProxyUrl($('proxyUrl').value);
           const res = await fetch(healthUrl, { method: 'GET', headers: localAgentHeaders() });
           const text = await res.text();
           let data;
           try { data = JSON.parse(text); } catch { data = { raw: text }; }
           if (!res.ok) throw new Error(data.error || data.message || `HTTP ${res.status}`);
-          statusEl.innerHTML = `Connected to <span class="mono">${escapeHtml(data.name || 'local agent')}</span>. Version: <span class="mono">${escapeHtml(data.version || 'unknown')}</span>. Started: <span class="mono">${escapeHtml(data.startedAt || '')}</span>.`;
-          toast('Local agent connection successful.', 'good');
+          statusEl.innerHTML = `Connected to <span class="mono">${escapeHtml(data.name || 'proxy')}</span>. Version: <span class="mono">${escapeHtml(data.version || 'unknown')}</span>. Started: <span class="mono">${escapeHtml(data.startedAt || '')}</span>.`;
+          setProxyConnection('connected', data.name || 'Proxy connected');
+          toast('Proxy connection successful.', 'good');
         } catch (err) {
-          statusEl.innerHTML = `Could not connect: <span class="mono">${escapeHtml(err.message)}</span>. Make sure <span class="mono">node local-agent.js</span> is running and the token is correct.`;
-          toast('Local agent test failed.', 'bad');
+          setProxyConnection('error', err.message);
+          statusEl.innerHTML = `Could not connect: <span class="mono">${escapeHtml(err.message)}</span>. Check the endpoint URL, proxy token, and that your Node, PHP, or Python proxy is running.`;
+          toast('Proxy test failed.', 'bad');
         }
       }
 
@@ -3723,8 +3836,18 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         controls.forEach(id => {
           const el = $(id);
           if (!el) return;
-          el.addEventListener('input', () => { if (requestControlIds.has(id)) { leaveDemoModeForCustomRequest(); clearResponseMappingForRequestChange(); } detectVariables(); saveSettingsDebounced(); });
-          el.addEventListener('change', () => { if (requestControlIds.has(id)) { leaveDemoModeForCustomRequest(); clearResponseMappingForRequestChange(); } detectVariables(); saveSettingsDebounced(); });
+          el.addEventListener('input', () => {
+            if (requestControlIds.has(id)) { leaveDemoModeForCustomRequest(); clearResponseMappingForRequestChange(); }
+            if (id === 'proxyUrl' || id === 'proxyToken') resetProxyConnection();
+            detectVariables();
+            saveSettingsDebounced();
+          });
+          el.addEventListener('change', () => {
+            if (requestControlIds.has(id)) { leaveDemoModeForCustomRequest(); clearResponseMappingForRequestChange(); }
+            if (id === 'proxyUrl' || id === 'proxyToken') resetProxyConnection();
+            detectVariables();
+            saveSettingsDebounced();
+          });
         });
         $('url').addEventListener('change', () => {
           if (syncQueryParamsFromUrl()) {
@@ -3745,6 +3868,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         $('loadSelectedDemoBtn').addEventListener('click', () => loadDemo($('demoSample').value));
         $('fillLocalAgentBtn').addEventListener('click', fillLocalAgentDefaults);
         $('testProxyBtn').addEventListener('click', testProxyConnection);
+        $('toggleProxyTokenBtn').addEventListener('click', toggleProxyTokenVisibility);
         $('addGridRowBtn').addEventListener('click', addGridRow);
         $('deleteEmptyRowsBtn').addEventListener('click', deleteEmptyGridRows);
         $('clearGridValuesBtn').addEventListener('click', clearGridValues);

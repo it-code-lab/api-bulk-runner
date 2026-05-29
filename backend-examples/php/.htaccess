@@ -1,0 +1,6 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  RewriteRule ^health/?$ index.php [QSA,L]
+  RewriteRule ^request/?$ index.php [QSA,L]
+</IfModule>
