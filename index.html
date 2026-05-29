@@ -1195,6 +1195,8 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         templateSearch: '',
         templateCollapsed: {},
         activeWorkflowStep: 'request',
+        variableSignature: '',
+        requestSignature: '',
         sectionCollapsed: {
           request: false,
           bulk: true,
@@ -1328,6 +1330,12 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         return document.querySelector('[data-sample].active')?.dataset.sample || 'single';
       }
 
+      function setBulkInputMode(mode = 'single') {
+        document.querySelectorAll('[data-sample]').forEach(tab => {
+          tab.classList.toggle('active', tab.dataset.sample === mode);
+        });
+      }
+
       function activeRequestTab() {
         return document.querySelector('[data-request-tab].active')?.dataset.requestTab || 'params';
       }
@@ -1359,6 +1367,117 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         $('runMode').value = 'direct';
         updateModeUI();
         toast('Switched to Browser Direct because Demo mode uses mock responses and does not call custom URLs.', 'info');
+      }
+
+      function currentRequestSignature() {
+        return [
+          $('runMode')?.value || '',
+          $('method')?.value || '',
+          $('url')?.value || '',
+          $('params')?.value || '',
+          $('authType')?.value || '',
+          $('contentType')?.value || '',
+          $('headers')?.value || '',
+          $('body')?.value || '',
+          getAuthDynamicValues()
+        ].join('\u001f');
+      }
+
+      function rememberRequestSignature() {
+        state.requestSignature = currentRequestSignature();
+      }
+
+      function clearResponseMappingForRequestChange() {
+        const nextSignature = currentRequestSignature();
+        if (!state.requestSignature) {
+          state.requestSignature = nextSignature;
+          return;
+        }
+        if (state.requestSignature === nextSignature) return;
+        state.requestSignature = nextSignature;
+        state.sampleJson = null;
+        state.discoveredPaths = [];
+        state.mappings = [];
+        renderMappings();
+        renderSampleResponse();
+        updateWorkflowSections();
+      }
+
+      function keyValueKeysFromText(text) {
+        const keys = new Set();
+        const raw = String(text || '');
+        try {
+          const obj = JSON.parse(raw);
+          if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+            Object.keys(obj).forEach(key => { if (key) keys.add(key); });
+            if (keys.size) return keys;
+          }
+        } catch {}
+        raw.split(/\r?\n/).forEach(line => {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith('{')) return;
+          const eq = trimmed.indexOf('=');
+          const colon = trimmed.indexOf(':');
+          const idx = eq > -1 && (colon === -1 || eq < colon) ? eq : colon;
+          if (idx > -1) keys.add(trimmed.slice(0, idx).trim());
+        });
+        return keys;
+      }
+
+      function queryKeysFromUrlText(rawUrl) {
+        const keys = new Set();
+        const raw = String(rawUrl || '');
+        const queryIndex = raw.indexOf('?');
+        if (queryIndex < 0) return keys;
+        const hashIndex = raw.indexOf('#', queryIndex);
+        const queryEnd = hashIndex > -1 ? hashIndex : raw.length;
+        const query = raw.slice(queryIndex + 1, queryEnd);
+        if (!query.trim()) return keys;
+        try {
+          new URLSearchParams(query).forEach((_, key) => { if (key) keys.add(key); });
+        } catch {
+          query.split('&').forEach(part => {
+            const rawKey = part.split('=')[0];
+            if (!rawKey) return;
+            try {
+              keys.add(decodeURIComponent(rawKey.replace(/\+/g, ' ')));
+            } catch {
+              keys.add(rawKey);
+            }
+          });
+        }
+        return keys;
+      }
+
+      function syncQueryParamsFromUrl() {
+        const urlEl = $('url');
+        const paramsEl = $('params');
+        if (!urlEl || !paramsEl) return false;
+        const raw = urlEl.value.trim();
+        const queryIndex = raw.indexOf('?');
+        if (queryIndex < 0) return false;
+
+        const hashIndex = raw.indexOf('#');
+        const hash = hashIndex > -1 ? raw.slice(hashIndex) : '';
+        const queryEnd = hashIndex > -1 ? hashIndex : raw.length;
+        const base = raw.slice(0, queryIndex);
+        const query = raw.slice(queryIndex + 1, queryEnd);
+        if (!query.trim()) return false;
+
+        const existingKeys = keyValueKeysFromText(paramsEl.value);
+        const additions = [];
+        new URLSearchParams(query).forEach((value, key) => {
+          if (!key || existingKeys.has(key)) return;
+          additions.push(`${key}=${value}`);
+          existingKeys.add(key);
+        });
+        if (!additions.length) return false;
+
+        paramsEl.value = [paramsEl.value.trim(), additions.join('\n')].filter(Boolean).join('\n');
+        urlEl.value = `${base}${hash}`;
+        setRequestTab('params');
+        toast('Moved query parameters from the URL into the Params tab.', 'good');
+        return true;
       }
 
       function initializeWorkflowSections() {
@@ -1567,7 +1686,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         state.sampleJson = cfg.sampleJson || null;
         state.discoveredPaths = Array.isArray(cfg.discoveredPaths) ? cfg.discoveredPaths : (state.sampleJson ? discoverPaths(state.sampleJson) : []);
         state.demoScenario = cfg.demoSample || state.demoScenario;
-        detectVariables();
+        detectVariables({ preserveBulkInput: true });
         parseBulkInput(false);
         renderMappings();
         renderRequestMappings();
@@ -1575,6 +1694,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         renderDemoArtifacts();
         renderBulkGridEditor();
         updateModeUI();
+        rememberRequestSignature();
         updateWorkflowSections();
       }
 
@@ -1977,7 +2097,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         $('authFields').innerHTML = html;
         ['bearerToken', 'apiKeyName', 'apiKeyValue', 'basicUser', 'basicPass'].forEach(id => {
           const el = $(id);
-          if (el) el.addEventListener('input', () => { leaveDemoModeForCustomRequest(); detectVariables(); saveSettingsDebounced(); });
+          if (el) el.addEventListener('input', () => { leaveDemoModeForCustomRequest(); clearResponseMappingForRequestChange(); detectVariables(); saveSettingsDebounced(); });
         });
       }
 
@@ -1987,13 +2107,37 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
           .join('\n');
       }
 
-      function detectVariables() {
+      function resetBulkInputForVariables(vars) {
+        setBulkInputMode('single');
+        state.gridMinRows = 4;
+        state.rows = [];
+        state.rowColumns = vars.length ? [...vars] : [];
+        state.requestMappings = {};
+        $('firstRowMode').value = 'yes';
+        $('bulkInput').value = vars.length
+          ? `${vars.map(v => delimitedCell(v, '\t')).join('\t')}\n`
+          : '';
+      }
+
+      function detectVariables({ preserveBulkInput = false } = {}) {
         const text = [$('url').value, $('params').value, $('headers').value, $('body').value, getAuthDynamicValues()].join('\n');
-        const regex = /{{\s*([a-zA-Z0-9_.-]+)\s*}}/g;
+        const regex = /{{\s*([a-zA-Z0-9_.-]+)\s*}}|{\s*([a-zA-Z0-9_.-]+)\s*}/g;
         const vars = [];
         let match;
-        while ((match = regex.exec(text))) vars.push(match[1]);
-        state.variables = unique(vars);
+        while ((match = regex.exec(text))) vars.push(match[1] || match[2]);
+        const pathRegex = /\/:([a-zA-Z][a-zA-Z0-9_.-]*)/g;
+        while ((match = pathRegex.exec($('url').value || ''))) vars.push(match[1]);
+        keyValueKeysFromText($('params')?.value || '').forEach(key => vars.push(key));
+        queryKeysFromUrlText($('url')?.value || '').forEach(key => vars.push(key));
+        const nextVars = unique(vars);
+        const nextSignature = nextVars.map(normalizeName).sort().join('|');
+        const hasBulkDraft = Boolean(state.rows.length || $('bulkInput')?.value.trim());
+        if (!preserveBulkInput && state.variableSignature !== nextSignature && (state.variableSignature || hasBulkDraft)) {
+          resetBulkInputForVariables(nextVars);
+          toast(nextVars.length ? 'Bulk input reset for the current request variables.' : 'Bulk input cleared because this request has no variables.', 'info');
+        }
+        state.variables = nextVars;
+        state.variableSignature = nextSignature;
         renderVariables();
         renderSingleColumnVarOptions();
         renderInputColumnHints();
@@ -2008,7 +2152,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         const vars = state.variables;
         $('variableSummary').textContent = vars.length
           ? `${vars.length} variable${vars.length === 1 ? '' : 's'} detected. Bulk input will be matched automatically where possible.`
-          : 'No variables detected yet. Add {{variableName}} in your URL, params, headers, auth, or body to run in bulk.';
+          : 'No variables detected yet. Add {{variableName}}, {variableName}, or /:variableName in your request to run in bulk.';
         $('variableTokens').innerHTML = vars.map(v => `<span class="token">{{${escapeHtml(v)}}}</span>`).join('');
       }
 
@@ -2111,7 +2255,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         const rows = [...document.querySelectorAll('[data-grid-row]')].map(tr =>
           vars.map((_, idx) => tr.querySelector(`[data-grid-col="${idx}"]`)?.value ?? '')
         );
-        const meaningfulRows = rows.filter(row => row.some(value => String(value).trim()));
+        const meaningfulRows = rows.filter(row => row.some(value => hasMeaningfulInputValue(value)));
         $('bulkInput').value = [
           vars.map(v => delimitedCell(v, '\t')).join('\t'),
           ...meaningfulRows.map(row => row.map(v => delimitedCell(v, '\t')).join('\t'))
@@ -2173,7 +2317,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         });
         $('bulkInput').value = [
           vars.map(v => delimitedCell(v, '\t')).join('\t'),
-          ...currentRows.filter(row => row.some(value => String(value).trim())).map(row => row.map(v => delimitedCell(v, '\t')).join('\t'))
+          ...currentRows.filter(row => row.some(value => hasMeaningfulInputValue(value))).map(row => row.map(v => delimitedCell(v, '\t')).join('\t'))
         ].join('\n');
         $('firstRowMode').value = 'yes';
         parseBulkInput(true);
@@ -2197,16 +2341,33 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
       }
 
       function clearGridValues() {
+        state.sectionTouched.bulk = true;
+        state.sectionCollapsed.bulk = false;
         const vars = state.variables.length ? state.variables : ['value'];
         state.gridMinRows = 4;
-        $('bulkInput').value = `${vars.map(v => delimitedCell(v, '\t')).join('\t')}\n`;
+        $('bulkInput').value = '';
         $('firstRowMode').value = 'yes';
         state.rows = [];
         state.rowColumns = vars;
         renderBulkGridEditor();
         renderInputPreview();
         renderRunValidation();
+        updateWorkflowSections();
         saveSettings();
+      }
+
+      function convertRowsForInputMode(mode) {
+        const vars = state.variables.length ? state.variables : (state.rowColumns.length ? state.rowColumns : ['value']);
+        const rows = (state.rows.length ? state.rows : []).filter(row => rowHasMeaningfulInput(row, vars));
+        if (!rows.length) return '';
+        if (mode === 'json') {
+          return JSON.stringify(rows.map(row => Object.fromEntries(vars.map(v => [v, row[v] ?? '']))), null, 2);
+        }
+        const delimiter = mode === 'csv' ? ',' : '\t';
+        return [
+          vars.map(v => delimitedCell(v, delimiter)).join(delimiter),
+          ...rows.map(row => vars.map(v => delimitedCell(row[v] ?? '', delimiter)).join(delimiter))
+        ].join('\n');
       }
 
       function updateModeUI() {
@@ -2351,7 +2512,12 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
             const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
             const delimiter = detectDelimiter(text);
             if (!delimiter) {
-              const varName = $('singleColumnVar').value || state.variables[0] || 'value';
+              const headerMode = $('firstRowMode').value;
+              const firstLooksLikeHeader = looksLikeHeader([lines[0] || '']);
+              const firstIsHeader = (headerMode === 'yes' || headerMode === 'auto') && firstLooksLikeHeader;
+              const varName = firstIsHeader
+                ? (lines.shift() || $('singleColumnVar').value || state.variables[0] || 'value')
+                : ($('singleColumnVar').value || state.variables[0] || 'value');
               rows = lines.map(line => ({ [varName]: line }));
             } else {
               const matrix = lines.map(line => splitCsvLine(line, delimiter));
@@ -2373,11 +2539,13 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
 
           state.rows = rows;
           state.rowColumns = unique(rows.flatMap(row => Object.keys(row)));
+          pruneEmptyInputRows();
           smartColumnMatch();
+          pruneHeaderInputRow();
           renderInputPreview();
           renderRunValidation();
           updateWorkflowSections();
-          if (showToast) toast(`Parsed ${rows.length} row${rows.length === 1 ? '' : 's'}.`, 'good');
+          if (showToast) toast(`Parsed ${state.rows.length} row${state.rows.length === 1 ? '' : 's'}.`, 'good');
         } catch (err) {
           toast(err.message || 'Could not parse bulk input.', 'bad');
         }
@@ -2400,6 +2568,46 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
           state.rows = state.rows.map(row => ({ [newCol]: row[oldCol] }));
           state.rowColumns = [newCol];
         }
+      }
+
+      function hasMeaningfulInputValue(value) {
+        return value !== undefined && value !== null && String(value).trim() !== '';
+      }
+
+      function rowHasMeaningfulInput(row, columns = []) {
+        const keys = columns.length ? columns : Object.keys(row || {});
+        return keys.some(key => hasMeaningfulInputValue(row?.[key]));
+      }
+
+      function pruneEmptyInputRows() {
+        if (!state.rows.length) return 0;
+        const columns = state.rowColumns.length ? state.rowColumns : unique(state.rows.flatMap(row => Object.keys(row)));
+        const before = state.rows.length;
+        state.rows = state.rows.filter(row => rowHasMeaningfulInput(row, columns));
+        if (before !== state.rows.length) {
+          state.rowColumns = unique(state.rows.flatMap(row => Object.keys(row)));
+          if (!state.rowColumns.length && columns.length) state.rowColumns = columns;
+        }
+        return before - state.rows.length;
+      }
+
+      function pruneHeaderInputRow() {
+        if (!state.rows.length) return false;
+        const columns = state.rowColumns.length ? state.rowColumns : Object.keys(state.rows[0] || {});
+        if (!columns.length) return false;
+        const first = state.rows[0];
+        const meaningfulColumns = columns.filter(key => hasMeaningfulInputValue(first?.[key]));
+        if (!meaningfulColumns.length) return false;
+        const looksLikeParsedHeader = meaningfulColumns.every(key => {
+          const value = first?.[key];
+          return normalizeName(value) === normalizeName(key)
+            || state.variables.some(variable => normalizeName(value) === normalizeName(variable));
+        });
+        if (!looksLikeParsedHeader) return false;
+        state.rows = state.rows.slice(1);
+        state.rowColumns = unique(state.rows.flatMap(row => Object.keys(row)));
+        if (!state.rowColumns.length) state.rowColumns = columns;
+        return true;
       }
 
       function renderInputPreview() {
@@ -2541,13 +2749,25 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         return parseKeyValueText(text, row);
       }
 
+      function rowValueForKey(row, key, fallback) {
+        const source = row || {};
+        if (Object.prototype.hasOwnProperty.call(source, key)) return source[key];
+        const match = Object.keys(source).find(k => normalizeName(k) === normalizeName(key));
+        return match !== undefined ? source[match] : fallback;
+      }
+
       function appendQueryParams(rawUrl, row) {
         const params = parseKeyValueText($('params')?.value || '', row);
-        if (!Object.keys(params).length) return rawUrl;
+        const hasRowValues = Boolean(row && Object.keys(row).length);
+        if (!Object.keys(params).length && !hasRowValues) return rawUrl;
         const url = new URL(rawUrl);
+        url.searchParams.forEach((value, key) => {
+          const rowValue = rowValueForKey(row, key, undefined);
+          if (rowValue !== undefined) url.searchParams.set(key, rowValue);
+        });
         Object.entries(params).forEach(([key, value]) => {
           if (!key) return;
-          url.searchParams.set(key, value);
+          url.searchParams.set(key, rowValueForKey(row, key, value));
         });
         return url.toString();
       }
@@ -2574,7 +2794,8 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
       }
 
       function replaceVars(text, row) {
-        return String(text ?? '').replace(/{{\s*([a-zA-Z0-9_.-]+)\s*}}/g, (_, key) => {
+        return String(text ?? '').replace(/{{\s*([a-zA-Z0-9_.-]+)\s*}}|{\s*([a-zA-Z0-9_.-]+)\s*}/g, (_, doubleKey, singleKey) => {
+          const key = doubleKey || singleKey;
           const exact = row[key];
           if (exact !== undefined) return String(exact);
           const match = Object.keys(row).find(k => normalizeName(k) === normalizeName(key));
@@ -2582,9 +2803,18 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         });
       }
 
+      function replacePathParams(url, row) {
+        return String(url || '').replace(/\/:([a-zA-Z][a-zA-Z0-9_.-]*)/g, (segment, key) => {
+          const exact = row[key];
+          const match = exact !== undefined ? key : Object.keys(row).find(k => normalizeName(k) === normalizeName(key));
+          const value = match ? row[match] : '';
+          return `/${encodeURIComponent(String(value))}`;
+        });
+      }
+
       function buildRequest(row) {
         const method = $('method').value;
-        const url = appendQueryParams(replaceVars($('url').value.trim(), row), row);
+        const url = appendQueryParams(replacePathParams(replaceVars($('url').value.trim(), row), row), row);
         const headers = addAuthHeaders(parseHeaders($('headers').value, row), row);
         const rawBody = replaceVars($('body').value, row);
         const hasBody = rawBody.trim() && !['GET', 'HEAD'].includes(method);
@@ -3039,7 +3269,16 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
 
       async function runRows({ onlyFirst = false } = {}) {
         detectVariables();
+        syncGridToBulkInput();
         parseBulkInput(false);
+        const removedRows = pruneEmptyInputRows();
+        if (removedRows) {
+          if (currentInputMode() === 'single') renderBulkGridEditor();
+          renderInputPreview();
+          renderRunValidation();
+          updateWorkflowSections();
+          toast(`Skipped ${removedRows} empty input row${removedRows === 1 ? '' : 's'}.`, 'info');
+        }
         if (!state.rows.length) {
           toast('Add or parse at least one input row.', 'bad');
           return;
@@ -3061,6 +3300,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         const concurrency = Math.max(1, Math.min(20, Number($('concurrency').value) || 1));
         const delayMs = Math.max(0, Number($('delayMs').value) || 0);
         let nextIndex = 0;
+        let sampleUpdated = false;
 
         async function worker() {
           while (state.running && nextIndex < rows.length) {
@@ -3083,11 +3323,15 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
               };
               if (onlyFirst) state.results = [result];
               else state.results.push(result);
-              if (response.json && !state.sampleJson) {
+              if (response.json && !sampleUpdated) {
+                sampleUpdated = true;
                 state.sampleJson = response.json;
                 state.discoveredPaths = discoverPaths(response.json);
                 if (!state.mappings.length) autoMapFromJson(response.json, true);
-                renderSampleResponse();
+                else {
+                  renderMappings();
+                  renderSampleResponse();
+                }
               }
             } catch (err) {
               const result = {
@@ -3262,7 +3506,8 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         $('delayMs').value = '120';
         $('retries').value = '1';
         state.requestMappings = { ...demo.requestMappings };
-        detectVariables();
+        setBulkInputMode('single');
+        detectVariables({ preserveBulkInput: true });
         parseBulkInput(false);
         const firstRow = applyRequestMappings(state.rows[0] || {});
         state.sampleJson = buildDemoJson(firstRow, 0);
@@ -3275,6 +3520,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         renderSampleResponse();
         renderDemoArtifacts();
         renderBulkGridEditor();
+        rememberRequestSignature();
         saveSettings();
         toast('Demo sample loaded with request and response mappings.', 'good');
       }
@@ -3486,11 +3732,20 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         controls.forEach(id => {
           const el = $(id);
           if (!el) return;
-          el.addEventListener('input', () => { if (requestControlIds.has(id)) leaveDemoModeForCustomRequest(); detectVariables(); saveSettingsDebounced(); });
-          el.addEventListener('change', () => { if (requestControlIds.has(id)) leaveDemoModeForCustomRequest(); detectVariables(); saveSettingsDebounced(); });
+          el.addEventListener('input', () => { if (requestControlIds.has(id)) { leaveDemoModeForCustomRequest(); clearResponseMappingForRequestChange(); } detectVariables(); saveSettingsDebounced(); });
+          el.addEventListener('change', () => { if (requestControlIds.has(id)) { leaveDemoModeForCustomRequest(); clearResponseMappingForRequestChange(); } detectVariables(); saveSettingsDebounced(); });
+        });
+        $('url').addEventListener('change', () => {
+          if (syncQueryParamsFromUrl()) {
+            detectVariables();
+            saveSettings();
+          }
         });
         $('authType').addEventListener('change', () => { updateAuthFields(); detectVariables(); saveSettings(); });
-        $('runMode').addEventListener('change', () => { updateModeUI(); saveSettings(); });
+        $('runMode').addEventListener('change', () => {
+          if ($('runMode').value === 'demo') loadDemo($('demoSample').value || state.demoScenario || 'customerLookup');
+          else { updateModeUI(); saveSettings(); }
+        });
         $('method').addEventListener('change', () => { updateRequestMethodUI(); saveSettings(); });
         document.querySelectorAll('[data-request-tab]').forEach(tab => {
           tab.addEventListener('click', () => setRequestTab(tab.dataset.requestTab));
@@ -3521,7 +3776,18 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
           renderDemoArtifacts();
           saveSettings();
         });
-        $('clearRowsBtn').addEventListener('click', () => { $('bulkInput').value = ''; state.rows = []; state.rowColumns = []; renderInputPreview(); renderBulkGridEditor(); renderDemoArtifacts(); saveSettings(); });
+        $('clearRowsBtn').addEventListener('click', () => {
+          state.sectionTouched.bulk = true;
+          state.sectionCollapsed.bulk = false;
+          $('bulkInput').value = '';
+          state.rows = [];
+          state.rowColumns = state.variables.length ? [...state.variables] : [];
+          renderInputPreview();
+          renderBulkGridEditor();
+          renderDemoArtifacts();
+          updateWorkflowSections();
+          saveSettings();
+        });
         $('runBtn').addEventListener('click', () => runRows());
         $('testBtn').addEventListener('click', () => runRows({ onlyFirst: true }));
         $('stopBtn').addEventListener('click', stopRun);
@@ -3543,13 +3809,27 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         $('closeModalBtn').addEventListener('click', () => $('modalBackdrop').classList.remove('show'));
         $('modalBackdrop').addEventListener('click', (e) => { if (e.target === $('modalBackdrop')) $('modalBackdrop').classList.remove('show'); });
         document.querySelectorAll('[data-sample]').forEach(tab => tab.addEventListener('click', () => {
+          state.sectionTouched.bulk = true;
+          state.sectionCollapsed.bulk = false;
+          syncGridToBulkInput();
+          const previousText = $('bulkInput').value;
+          const previousRows = state.rows.map(row => ({ ...row }));
+          const previousColumns = [...state.rowColumns];
+          if (previousText.trim() && !previousRows.length) parseBulkInput(false);
+          const nextValue = convertRowsForInputMode(tab.dataset.sample);
+          if (!nextValue) {
+            state.rows = [];
+            state.rowColumns = previousColumns;
+          }
           document.querySelectorAll('[data-sample]').forEach(t => t.classList.remove('active'));
           tab.classList.add('active');
-          $('bulkInput').value = sampleRows(tab.dataset.sample);
+          $('bulkInput').value = nextValue;
           if (tab.dataset.sample !== 'json') $('firstRowMode').value = 'yes';
-          parseBulkInput(true);
+          if (nextValue) parseBulkInput(false);
+          else renderInputPreview();
           renderBulkGridEditor();
           renderDemoArtifacts();
+          updateWorkflowSections();
           saveSettings();
         }));
         $('templateSearch').addEventListener('input', () => {
@@ -3598,7 +3878,7 @@ uvicorn main:app --host 127.0.0.1 --port 8787</pre>
         updateRequestMethodUI();
         renderSavedLibrary();
         loadSettings();
-        detectVariables();
+        detectVariables({ preserveBulkInput: true });
         parseBulkInput(false);
         renderInputColumnHints();
         renderRequestMappings();
